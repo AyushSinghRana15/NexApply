@@ -1,4 +1,4 @@
-# NexApply — ResuMorph
+# NexApply
 
 Automated job application system that detects job postings in real-time, tailors resumes via AI, and submits applications within 1-2 minutes.
 
