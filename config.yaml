@@ -1,0 +1,12 @@
+platforms:
+  linkedin: true
+  indeed: true
+  naukri: true
+  internshala: true
+
+polling_interval_seconds: 30
+
+filters:
+  titles: ["Software Engineer", "Backend Developer", "SDE", "Python Developer"]
+  locations: ["Remote", "Delhi", "Bangalore", "Mumbai"]
+  exclude_keywords: ["10+ years", "only C++"]
