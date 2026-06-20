@@ -143,7 +143,7 @@ class RadarAgent:
         self.log.feed("LinkedIn feed connected — polling every 30s")
         while True:
             try:
-                url = "https://www.linkedin.com/jobs/search/?keywords=python&f_TPR=r3600"
+                url = "https://www.linkedin.com/jobs/search/?keywords=software+engineer&location=India&f_TPR=r3600&format=rss"
                 feed = feedparser.parse(url)
                 if not feed.entries:
                     self.log.warn("LinkedIn feed returned no entries — may require auth")
@@ -163,7 +163,7 @@ class RadarAgent:
         self.log.feed("Indeed feed connected — polling every 30s")
         while True:
             try:
-                url = "https://www.indeed.com/rss?q=python+developer&l=remote"
+                url = "https://in.indeed.com/rss?q=software+engineer&l=remote"
                 feed = feedparser.parse(url)
                 for entry in feed.entries:
                     title = entry.get("title", "Unknown Title")
