@@ -242,7 +242,7 @@ class RadarAgent:
                         self.log.detail(f"Internshala: found {len(cards)} internship cards")
                         for card in cards[:10]:
                             try:
-                                title_el = await card.query_selector("h2.job-internship-name a.job-title-hre")
+                                title_el = await card.query_selector("h2.job-internship-name a.job-title-href")
                                 title = await title_el.inner_text() if title_el else "Unknown"
                                 title = title.strip()
 

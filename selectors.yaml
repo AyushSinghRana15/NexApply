@@ -83,7 +83,7 @@ internshala:
     - button:has-text("Submit")
     - button[type="submit"]
   job_title:
-    - h2.job-internship-name a.job-title-hre
+    - h2.job-internship-name a.job-title-href
     - a[class*="title"]
   company_name:
     - .internship_logo img
