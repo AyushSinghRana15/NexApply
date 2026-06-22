@@ -105,9 +105,12 @@ class ApplyFleet:
                 payload.approval_event = asyncio.Event()
                 await self.output_queue.enqueue(payload)
 
-                await payload.approval_event.wait()
+                try:
+                    await asyncio.wait_for(payload.approval_event.wait(), timeout=600)
+                except asyncio.TimeoutError:
+                    self.log.warn(f"GuardAgent never responded for {payload.job_id} — safety timeout")
 
-                decision = payload.decision
+                decision = payload.decision or "TIMEOUT"
                 self._pending -= 1
                 self.log.detail(f"Decision for {payload.job_id}: {decision}")
 

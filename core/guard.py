@@ -89,45 +89,50 @@ class GuardAgent:
                 await asyncio.sleep(0.1)
                 continue
 
-            if payload.match_score < self._auto_skip_below:
-                self.log.skip(
-                    payload.platform, payload.title,
-                    f"Score {payload.match_score} < {self._auto_skip_below}"
+            try:
+                if payload.match_score < self._auto_skip_below:
+                    self.log.skip(
+                        payload.platform, payload.title,
+                        f"Score {payload.match_score} < {self._auto_skip_below}"
+                    )
+                    payload.decision = "SKIP"
+                    payload.approval_event.set()
+                    self._log_decision(payload, "SKIP")
+                    continue
+
+                if len(self._pending) >= self._max_pending:
+                    self.log.warn(
+                        f"Max pending reviews ({self._max_pending}) — "
+                        f"holding \"{payload.title}\" in queue"
+                    )
+
+                self._pending[payload.job_id] = payload
+                self.log.guard_review_ready(
+                    payload.title, payload.company, payload.platform, payload.match_score
                 )
-                payload.decision = "SKIP"
+                self.log.guard_countdown(self._review_timeout)
+
+                await self.ws_manager.broadcast({
+                    "type": "NEW_REVIEW",
+                    "payload": {
+                        "job_id": payload.job_id,
+                        "platform": payload.platform,
+                        "title": payload.title,
+                        "company": payload.company,
+                        "match_score": payload.match_score,
+                        "keywords": payload.keywords_injected,
+                        "resume_variant": payload.resume_variant,
+                        "screenshot_url": f"/screenshot/{payload.job_id}",
+                        "posted_ago": "just now",
+                        "filled_at": payload.filled_at,
+                    },
+                })
+
+                asyncio.create_task(self._countdown_and_timeout(payload))
+            except Exception as e:
+                self.log.error(f"GuardAgent error processing job {payload.job_id}: {e}")
+                payload.decision = "TIMEOUT"
                 payload.approval_event.set()
-                self._log_decision(payload, "SKIP")
-                continue
-
-            if len(self._pending) >= self._max_pending:
-                self.log.warn(
-                    f"Max pending reviews ({self._max_pending}) — "
-                    f"holding \"{payload.title}\" in queue"
-                )
-
-            self._pending[payload.job_id] = payload
-            self.log.guard_review_ready(
-                payload.title, payload.company, payload.platform, payload.match_score
-            )
-            self.log.guard_countdown(self._review_timeout)
-
-            await self.ws_manager.broadcast({
-                "type": "NEW_REVIEW",
-                "payload": {
-                    "job_id": payload.job_id,
-                    "platform": payload.platform,
-                    "title": payload.title,
-                    "company": payload.company,
-                    "match_score": payload.match_score,
-                    "keywords": payload.keywords_injected,
-                    "resume_variant": payload.resume_variant,
-                    "screenshot_url": f"/screenshot/{payload.job_id}",
-                    "posted_ago": "just now",
-                    "filled_at": payload.filled_at,
-                },
-            })
-
-            asyncio.create_task(self._countdown_and_timeout(payload))
 
     async def _countdown_and_timeout(self, payload: ApplicationPayload):
         remaining = self._review_timeout
