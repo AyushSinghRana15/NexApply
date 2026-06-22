@@ -1,0 +1,53 @@
+Name: Ayush Singh Rana
+Role: DevOps / Cloud Engineer
+Location: Delhi, India
+Email: ayush.singh@example.com
+Phone: +91-9999999999
+
+PROFESSIONAL SUMMARY
+DevOps engineer with 4+ years designing and managing cloud infrastructure at scale. Expert in {{KEYWORDS}}, infrastructure automation, and site reliability practices. Passionate about building resilient systems and optimizing deployment pipelines for speed and reliability.
+
+TECHNICAL SKILLS
+Cloud: AWS, GCP, Azure
+Containerization: Docker, Kubernetes, ECS, EKS, Helm
+CI/CD: GitHub Actions, Jenkins, GitLab CI, ArgoCD, CircleCI
+Infrastructure: Terraform, Pulumi, Ansible, CloudFormation, Packer
+Monitoring: Prometheus, Grafana, Datadog, ELK Stack, New Relic
+Languages: Python, Go, Bash, HCL
+
+EXPERIENCE
+
+Senior DevOps Engineer | CloudScale Inc. | Jan 2023 – Present
+- Designed and managed multi-region Kubernetes infrastructure serving 10M+ daily users
+- Reduced deployment time from 45 minutes to 3 minutes through CI/CD optimization
+- Implemented auto-scaling policies reducing cloud costs by 35% while maintaining performance
+- Led migration of 200+ microservices from monolith to Kubernetes with zero downtime
+
+DevOps Engineer | InfrastructurePro | Jun 2021 – Dec 2022
+- Built and maintained CI/CD pipelines for 50+ microservices using GitHub Actions and ArgoCD
+- Automated infrastructure provisioning using Terraform reducing setup time from 2 days to 2 hours
+- Implemented comprehensive monitoring and alerting stack achieving 99.99% uptime SLA
+- Conducted disaster recovery drills and improved RTO from 4 hours to 15 minutes
+
+Cloud Engineer | StartupXYZ | Aug 2020 – May 2021
+- Managed AWS infrastructure serving 500k+ users across EC2, RDS, and ElastiCache
+- Implemented infrastructure-as-code using Terraform reducing configuration drift by 90%
+- Built automated backup and recovery systems ensuring data integrity
+
+EDUCATION
+B.Tech in Computer Science | NIT Delhi | 2016 – 2020
+
+CERTIFICATIONS
+- AWS Solutions Architect Professional
+- Certified Kubernetes Administrator (CKA)
+- Terraform Associate
+
+PROJECTS
+- Kubernetes Operator: Built custom operator for automated database failover
+- Cost Optimization Tool: Automated cloud cost analysis and recommendation engine
+- Incident Bot: Slack-integrated incident management bot reducing MTTR by 40%
+
+ACHIEVEMENTS
+- Speaker at KubeCon 2024 — "Kubernetes at Scale: Lessons from 200+ Microservices"
+- Open source contributor to Terraform providers and Prometheus exporters
+- Technical blog on "GitOps Workflows" — featured on CNCF blog

@@ -1,0 +1,45 @@
+Name: Ayush Singh
+Role: Machine Learning Engineer
+Location: India
+Email: ayushsingh100105@gmail.com
+Phone: +91-9536726382
+
+PROFILE
+Machine Learning Engineer skilled in ML, Deep Learning, NLP, RAG, Computer Vision, LLM Integration,
+APIs, Docker, and model deployment using Python, TensorFlow, and Scikit-learn. Proficient in {{KEYWORDS}}.
+
+EXPERIENCE
+
+Labmentix | Jul 2025 – Jan 2026
+- Contributed to 12+ real-world AI/ML projects across finance and logistics domains
+- Preprocessed and analyzed datasets with 500K+ records, improving data quality and model readiness
+- Trained and evaluated 11 ML models, achieving 10-20% performance gains after tuning
+
+SKILLS
+Languages: Python, SQL, Java
+AI/ML: Machine Learning, Deep Learning, NLP, Computer Vision, RAG, LLM Integration, Transfer Learning, Predictive Modeling, {{KEYWORDS}}
+Tools & Frameworks: Scikit-learn, TensorFlow, Pandas, NumPy, FastAPI, Flask, Docker, MLflow, Git, Tableau, Jupyter Notebook
+Core Skills: Feature Engineering, Model Deployment, Data Preprocessing, Hyperparameter Tuning, Problem Solving, Team Collaboration
+
+PROJECTS
+
+FinRisk (Financial Risk Management System) | Nov 2025 – May 2026
+- Architected scalable Financial Risk Management APIs for credit risk, fraud detection, and portfolio optimization with low-latency performance
+- Designed fraud detection APIs, reducing false positives by 20%+ through model optimization using FastAPI, TensorFlow, and Docker
+
+Codebase AI Assistant | Apr 2026 – May 2026
+- Built a memory-efficient AI codebase assistant capable of processing 5GB repositories and managing 50K+ FAISS vectors on just 2GB RAM
+- Optimized the ingestion pipeline using dynamic chunking, enabling 5-10 concurrent queries with stable low-latency retrieval
+
+Brain Tumor Classification using Deep Learning | Nov 2025 – Jan 2026
+- Built a deep learning image classification model achieving ~98% accuracy using CNNs for brain tumor detection
+- Processed 7K+ MRI scans with augmentation and normalization techniques, improving robustness against overfitting
+
+CERTIFICATIONS
+- Python 3.4.3 Training Certificate by IIT Bombay | Dec 2024
+- AIML Fundamentals by GrantThornton Bharat | Mar 2025
+- Java Training Certificate by IIT Bombay | May 2025
+
+EDUCATION
+Roorkee Institute of Technology, Roorkee | Aug 2023 – Present
+Bachelor of Technology in Computer Science and Engineering (AI/ML)

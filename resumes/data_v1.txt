@@ -1,0 +1,48 @@
+Name: Ayush Singh Rana
+Role: Data Scientist / ML Engineer
+Location: Delhi, India
+Email: ayush.singh@example.com
+Phone: +91-9999999999
+
+PROFESSIONAL SUMMARY
+Data scientist with 4+ years of experience building machine learning models and data pipelines. Skilled in {{KEYWORDS}}, statistical analysis, and production ML systems. Passionate about turning data into actionable insights and deploying models that drive business impact.
+
+TECHNICAL SKILLS
+Languages: Python, R, SQL, Scala
+ML Frameworks: PyTorch, TensorFlow, scikit-learn, XGBoost, LightGBM
+Data Tools: Pandas, NumPy, Spark, Airflow, dbt, Kafka
+Cloud: AWS SageMaker, GCP Vertex AI, Docker, Kubernetes
+Visualization: Tableau, Power BI, Matplotlib, Seaborn
+
+EXPERIENCE
+
+Senior Data Scientist | DataDriven Corp | Jan 2023 – Present
+- Built and deployed ML models improving customer retention prediction accuracy by 25%
+- Designed real-time feature engineering pipeline processing 10M+ events daily
+- Led A/B testing framework implementation reducing experiment analysis time by 60%
+- Mentored 3 junior data scientists on ML best practices and model deployment
+
+Data Scientist | AI Solutions Inc. | Jun 2021 – Dec 2022
+- Developed NLP pipeline for automated document classification serving 100k+ documents/day
+- Built recommendation system increasing user engagement by 35% using collaborative filtering
+- Created dashboards and automated reporting for executive stakeholders using Tableau
+- Reduced model inference latency by 50% through model quantization and optimization
+
+Data Analyst | InsightsLab | Aug 2020 – May 2021
+- Analyzed user behavior data to identify growth opportunities increasing retention by 20%
+- Built automated ETL pipelines reducing data processing time from 4 hours to 30 minutes
+- Presented data-driven recommendations to product teams using clear visualizations
+
+EDUCATION
+M.Tech in Data Science | IIIT Delhi | 2018 – 2020
+B.Tech in Computer Science | NSIT Delhi | 2014 – 2018
+
+PROJECTS
+- ML Model Monitoring: Built real-time model drift detection system using Prometheus and Grafana
+- Text Summarization: Fine-tuned BERT for abstractive summarization on legal documents
+- Fraud Detection: XGBoost-based fraud detection system processing 1M+ transactions daily
+
+ACHIEVEMENTS
+- Published paper on "Efficient NLP Pipelines" at ICML 2023
+- Kaggle Grandmaster (Top 0.1%)
+- Open source contributor to PyTorch and scikit-learn

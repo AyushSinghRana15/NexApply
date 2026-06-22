@@ -1,0 +1,47 @@
+Name: Ayush Singh Rana
+Role: Product Designer / UI-UX Designer
+Location: Delhi, India
+Email: ayush.singh@example.com
+Phone: +91-9999999999
+
+PROFESSIONAL SUMMARY
+Creative product designer with 4+ years crafting intuitive user experiences for web and mobile applications. Skilled in {{KEYWORDS}}, interaction design, and design systems. Passionate about solving user problems through human-centered design and delivering pixel-perfect interfaces.
+
+TECHNICAL SKILLS
+Design Tools: Figma, Sketch, Adobe XD, Photoshop, Illustrator, After Effects
+UX Methods: User Research, Usability Testing, Information Architecture, Journey Mapping, Wireframing
+Prototyping: Figma Prototyping, Principle, Framer, ProtoPie
+Frontend: HTML, CSS, Tailwind, React basics
+Design Systems: Material Design, Human Interface Guidelines, Storybook
+
+EXPERIENCE
+
+Senior Product Designer | DesignStudio Inc. | Jan 2023 – Present
+- Led end-to-end design for B2B SaaS platform resulting in 45% improvement in user task completion rate
+- Built comprehensive design system used by 4 product teams ensuring consistent cross-platform experience
+- Conducted 40+ user research sessions driving data-informed design decisions
+- Reduced design-to-development handoff time by 50% through improved Figma workflows
+
+Product Designer | UXForward | Jun 2021 – Dec 2022
+- Redesigned mobile app improving user retention by 30% through intuitive navigation and onboarding
+- Created interactive prototypes and conducted usability testing with 200+ users
+- Collaborated with product managers and engineers to ship 20+ features on time
+- Established design review process ensuring visual consistency across all products
+
+Junior Designer | Digitify Labs | Aug 2020 – May 2021
+- Designed 50+ screens for web and mobile applications maintaining brand consistency
+- Created wireframes, mockups, and interactive prototypes for client presentations
+- Conducted competitive analysis and market research for 3 major product launches
+
+EDUCATION
+B.Design in Visual Communication | NID Ahmedabad | 2016 – 2020
+
+PROJECTS
+- Design System Documentation: Built comprehensive Storybook-based design system with 100+ components
+- Accessibility Audit: Conducted WCAG 2.1 audit and improved accessibility score from 60 to 95
+- Mobile App Redesign: Complete redesign of fitness app leading to 4.8★ App Store rating
+
+ACHIEVEMENTS
+- Featured on Behance "Interaction Design" gallery — 10k+ appreciations
+- Speaker at DesignUp 2024 on "Building Scalable Design Systems"
+- Mentor at ADPList — mentored 30+ aspiring designers

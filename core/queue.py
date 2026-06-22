@@ -1,18 +1,16 @@
 import asyncio
-from typing import Optional
-
-from core.models import JobEvent
+from typing import Any, Optional
 
 
 class JobQueue:
 
     def __init__(self):
-        self._queue: asyncio.Queue[JobEvent] = asyncio.Queue()
+        self._queue: asyncio.Queue[Any] = asyncio.Queue()
 
-    async def enqueue(self, event: JobEvent):
+    async def enqueue(self, event: Any):
         await self._queue.put(event)
 
-    async def dequeue(self) -> Optional[JobEvent]:
+    async def dequeue(self) -> Optional[Any]:
         try:
             return await self._queue.get()
         except Exception:

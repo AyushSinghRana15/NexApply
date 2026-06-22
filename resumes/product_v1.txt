@@ -1,0 +1,46 @@
+Name: Ayush Singh Rana
+Role: Product Manager
+Location: Delhi, India
+Email: ayush.singh@example.com
+Phone: +91-9999999999
+
+PROFESSIONAL SUMMARY
+Results-driven product manager with 4+ years leading cross-functional teams to deliver impactful products. Expertise in {{KEYWORDS}}, user research, and data-driven decision making. Proven track record of shipping products that drive business growth and customer satisfaction.
+
+TECHNICAL SKILLS
+Methodologies: Agile, Scrum, Kanban, Lean Startup
+Tools: Jira, Confluence, Figma, Miro, Amplitude, Mixpanel, Google Analytics
+Domain: Product Strategy, Roadmapping, Stakeholder Management, Go-to-Market, OKRs
+Technical: SQL, Python, A/B Testing, API Design, Data Analysis
+
+EXPERIENCE
+
+Senior Product Manager | TechProduct Inc. | Jan 2023 – Present
+- Led product strategy for B2B SaaS platform serving 500+ enterprise clients generating $10M ARR
+- Defined and executed product roadmap resulting in 40% increase in user engagement
+- Drove cross-functional teams (engineering, design, marketing) to ship 15+ features on schedule
+- Established data-informed decision culture implementing A/B testing framework used by 3 product teams
+
+Product Manager | GrowthLabs | Jun 2021 – Dec 2022
+- Launched 2 new product lines achieving $2M revenue in first year
+- Conducted 50+ user research interviews leading to 30% improvement in NPS score
+- Reduced feature delivery time by 35% through process improvements and clear requirement definitions
+- Managed stakeholder communications across engineering, sales, and executive teams
+
+Associate Product Manager | StartupXYZ | Aug 2020 – May 2021
+- Owned product analytics and user behavior tracking using Mixpanel and Amplitude
+- Wrote 100+ detailed product requirements and user stories for engineering teams
+- Coordinated beta testing program with 500+ users providing actionable feedback
+
+EDUCATION
+MBA in Product Management | ISB Hyderabad | 2018 – 2020
+B.Tech in Computer Science | DTU Delhi | 2014 – 2018
+
+PROJECTS
+- SaaS Dashboard Redesign: Led redesign resulting in 50% reduction in user onboarding time
+- API Product Launch: Defined and launched public API product adopted by 200+ developers
+
+ACHIEVEMENTS
+- Speaker at ProductCon 2024 on "Building Data-Driven Product Teams"
+- Mentor at PM School Delhi — guided 10+ aspiring product managers
+- Published on Product Coalition (Medium) — 15k+ monthly readers

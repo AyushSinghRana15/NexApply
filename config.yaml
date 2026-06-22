@@ -10,3 +10,14 @@ filters:
   titles: ["Software Engineer", "Backend Developer", "SDE", "Python Developer"]
   locations: ["Remote", "Delhi", "Bangalore", "Mumbai"]
   exclude_keywords: ["10+ years", "only C++"]
+
+tailor:
+  min_match_score: 60
+  groq_model: "llama-3.3-70b-versatile"
+  ollama_model: "mistral"
+  ollama_host: "http://localhost:11434"
+  groq_timeout_seconds: 8
+  use_llm: true
+
+profile:
+  categories: ["engineering", "data", "product", "devops", "design", "ml"]

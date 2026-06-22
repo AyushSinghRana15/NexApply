@@ -1,0 +1,47 @@
+Name: Ayush Singh Rana
+Role: Software Engineer
+Location: Delhi, India
+Email: ayush.singh@example.com
+Phone: +91-9999999999
+
+PROFESSIONAL SUMMARY
+Experienced software engineer with 4+ years building scalable backend systems and distributed microservices. Proficient in Python, REST APIs, system design, and {{KEYWORDS}}. Passionate about solving complex engineering problems and delivering high-quality software at scale.
+
+TECHNICAL SKILLS
+Languages: Python, Go, JavaScript, TypeScript, SQL
+Frameworks: FastAPI, Django, Flask, React, Node.js
+Infrastructure: Docker, Kubernetes, AWS, Redis, PostgreSQL, MongoDB
+Tools: Git, GitHub Actions, CI/CD, Terraform, Prometheus
+
+EXPERIENCE
+
+Senior Software Engineer | TechCorp Inc. | Jan 2023 – Present
+- Designed and built a distributed microservices architecture handling 10k+ requests/second
+- Reduced API latency by 40% through query optimization and caching strategies
+- Led migration of monolithic application to event-driven microservices using RabbitMQ and Kafka
+- Mentored 3 junior engineers and established code review best practices
+
+Software Engineer | DataFlow Systems | Jun 2021 – Dec 2022
+- Developed RESTful APIs serving 1M+ daily users using FastAPI and PostgreSQL
+- Implemented real-time data processing pipeline reducing ETL time by 60%
+- Built automated CI/CD pipelines reducing deployment time from 2 hours to 15 minutes
+- Collaborated with product teams to design and ship 10+ features
+
+Backend Developer | StartupXYZ | Aug 2020 – May 2021
+- Built and maintained backend services for a SaaS platform serving 50k users
+- Integrated third-party APIs including Stripe, SendGrid, and AWS S3
+- Wrote comprehensive unit and integration tests achieving 90% code coverage
+
+EDUCATION
+B.Tech in Computer Science | Delhi Technological University | 2016 – 2020
+CGPA: 8.7/10
+
+PROJECTS
+- Distributed Task Queue: Built a Redis-backed task queue with priority scheduling and retry logic
+- Real-time Chat System: WebSocket-based chat handling 5k concurrent connections
+- URL Shortener: High-throughput URL shortener with analytics dashboard
+
+ACHIEVEMENTS
+- Winner, Internal Hackathon 2024 — Built real-time monitoring system
+- Published technical article on "Scaling WebSockets" (5k+ reads)
+- Open source contributor to FastAPI and Redis libraries
