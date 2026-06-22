@@ -15,6 +15,11 @@ indeed:
     - input[name="phone"]
     - input[type="tel"]
     - input[placeholder*="Phone"]
+  submit_button:
+    - button[type="submit"]
+    - button:has-text("Apply")
+    - button[data-testid*="submit"]
+    - input[type="submit"]
   resume_upload:
     - input[type="file"]
   cover_letter:
@@ -65,6 +70,10 @@ naukri:
     - input[name="expectedCtc"]
     - input[placeholder*="expected"]
     - input[name="expCTC"]
+  submit_button:
+    - button:has-text("Send")
+    - button:has-text("Apply")
+    - button[type="submit"]
   resume_upload:
     - input[type="file"]
 

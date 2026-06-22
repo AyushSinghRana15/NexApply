@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexApply — Review Queue</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; height: 100vh; overflow: hidden; }
+#root { height: 100vh; display: flex; flex-direction: column; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid #1e293b; }
+.topbar h1 { font-size: 18px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; }
+.topbar h1 span { color: #38bdf8; }
+.badge { background: #1e293b; color: #94a3b8; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+.badge.active { background: #38bdf8; color: #0f172a; }
+
+.content { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
+
+.card { display: flex; width: 100%; max-width: 1100px; height: 520px; background: #1e293b; border-radius: 16px; overflow: hidden; animation: slideIn 0.4s ease-out; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+@keyframes slideIn { from { transform: translateX(80px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-80px); opacity: 0; } }
+.card.exiting { animation: slideOut 0.3s ease-in forwards; }
+
+.panel-left { width: 40%; padding: 32px; display: flex; flex-direction: column; border-right: 1px solid #334155; }
+.panel-left .meta { display: flex; gap: 8px; margin-bottom: 8px; }
+.panel-left .meta span { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; padding: 2px 8px; background: #0f172a; border-radius: 4px; }
+.panel-left h2 { font-size: 20px; font-weight: 600; margin-bottom: 4px; color: #f1f5f9; }
+.panel-left .company { font-size: 14px; color: #94a3b8; margin-bottom: 20px; }
+
+.score-section { margin-bottom: 20px; }
+.score-section .score-label { display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 6px; }
+.score-bar { height: 8px; background: #0f172a; border-radius: 4px; overflow: hidden; }
+.score-bar .fill { height: 100%; border-radius: 4px; transition: width 0.8s ease-out; }
+.score-bar .fill.green { background: #22c55e; }
+.score-bar .fill.yellow { background: #eab308; }
+.score-bar .fill.red { background: #ef4444; }
+
+.details { flex: 1; }
+.detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1e293b; font-size: 13px; }
+.detail-row .label { color: #64748b; }
+.detail-row .value { color: #e2e8f0; font-weight: 500; }
+.keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.keyword { background: #0f172a; color: #38bdf8; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 500; }
+
+.panel-right { width: 60%; display: flex; flex-direction: column; }
+.panel-right .screenshot-area { flex: 1; display: flex; align-items: center; justify-content: center; background: #0f172a; overflow: hidden; position: relative; }
+.panel-right .screenshot-area img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.panel-right .screenshot-area .placeholder { color: #475569; font-size: 14px; }
+.panel-right .variant-badge { position: absolute; top: 12px; right: 12px; background: #1e293b; color: #94a3b8; padding: 4px 10px; border-radius: 6px; font-size: 11px; }
+
+.actions { display: flex; gap: 8px; padding: 16px; background: #0f172a; }
+.actions button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
+.actions button:hover { opacity: 0.9; transform: translateY(-1px); }
+.actions button:active { transform: translateY(0); }
+.actions .btn-approve { background: #22c55e; color: #052e16; }
+.actions .btn-edit { background: #eab308; color: #422006; }
+.actions .btn-skip { background: #ef4444; color: #450a0a; }
+.actions .countdown { display: flex; align-items: center; justify-content: center; font-size: 12px; color: #64748b; min-width: 100px; }
+.actions .countdown.warning { color: #ef4444; font-weight: 600; }
+.shortcut-hint { font-size: 10px; color: #475569; display: block; margin-top: 2px; }
+
+.empty-state { text-align: center; }
+.empty-state .dot { width: 12px; height: 12px; background: #38bdf8; border-radius: 50%; margin: 0 auto 16px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 1; transform: scale(1.3); } }
+.empty-state h2 { font-size: 18px; color: #64748b; font-weight: 400; }
+.empty-state p { font-size: 13px; color: #475569; margin-top: 8px; }
+
+@media (max-width: 768px) {
+  .card { flex-direction: column; height: auto; max-height: 90vh; }
+  .panel-left { width: 100%; border-right: none; border-bottom: 1px solid #334155; }
+  .panel-right { width: 100%; min-height: 300px; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+function getScoreColor(score) {
+  if (score >= 75) return 'green';
+  if (score >= 51) return 'yellow';
+  return 'red';
+}
+
+function EmptyState() {
+  return (
+    <div className="empty-state">
+      <div className="dot" />
+      <h2>Watching for applications...</h2>
+      <p>RadarAgent is scanning job platforms. A review card will appear here automatically.</p>
+    </div>
+  );
+}
+
+function ReviewCard({ job, onDecision, countdown }) {
+  const [exiting, setExiting] = useState(false);
+  const [barWidth, setBarWidth] = useState(0);
+
+  useEffect(() => {
+    requestAnimationFrame(() => setBarWidth(job.match_score));
+  }, [job.job_id]);
+
+  const handleDecision = useCallback((action) => {
+    setExiting(true);
+    setTimeout(() => onDecision(job.job_id, action), 300);
+  }, [job.job_id, onDecision]);
+
+  const countdownWarning = countdown <= 60;
+  const minutes = Math.floor(countdown / 60);
+  const seconds = countdown % 60;
+
+  return (
+    <div className={`card${exiting ? ' exiting' : ''}`}>
+      <div className="panel-left">
+        <div className="meta">
+          <span>{job.platform}</span>
+          <span>{job.resume_variant}</span>
+        </div>
+        <h2>{job.title}</h2>
+        <div className="company">{job.company}</div>
+
+        <div className="score-section">
+          <div className="score-label">
+            <span>Match Score</span>
+            <span>{job.match_score}/100</span>
+          </div>
+          <div className="score-bar">
+            <div className={`fill ${getScoreColor(job.match_score)}`} style={{ width: `${barWidth}%` }} />
+          </div>
+        </div>
+
+        <div className="details">
+          <div className="detail-row">
+            <span className="label">Posted</span>
+            <span className="value">{job.posted_ago}</span>
+          </div>
+          <div className="detail-row">
+            <span className="label">Variant</span>
+            <span className="value">{job.resume_variant}</span>
+          </div>
+        </div>
+
+        <div className="keywords">
+          {job.keywords.map((kw, i) => <span key={i} className="keyword">{kw}</span>)}
+        </div>
+      </div>
+
+      <div className="panel-right">
+        <div className="screenshot-area">
+          {job.screenshot_url ? (
+            <img src={job.screenshot_url} alt="Application screenshot" />
+          ) : (
+            <div className="placeholder">No screenshot available</div>
+          )}
+          <span className="variant-badge">{job.resume_variant}</span>
+        </div>
+
+        <div className="actions">
+          <button className="btn-approve" onClick={() => handleDecision('APPROVE')}>
+            APPROVE
+            <span className="shortcut-hint">A</span>
+          </button>
+          <button className="btn-edit" onClick={() => handleDecision('EDIT')}>
+            EDIT
+            <span className="shortcut-hint">E</span>
+          </button>
+          <button className="btn-skip" onClick={() => handleDecision('SKIP')}>
+            SKIP
+            <span className="shortcut-hint">S</span>
+          </button>
+          <div className={`countdown${countdownWarning ? ' warning' : ''}`}>
+            {countdown > 0
+              ? `Auto-skip in ${minutes}:${String(seconds).padStart(2, '0')}`
+              : 'Timeout'}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [currentJob, setCurrentJob] = useState(null);
+  const [countdown, setCountdown] = useState(300);
+  const wsRef = useRef(null);
+
+  useEffect(() => {
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${location.host}/ws`);
+    wsRef.current = ws;
+
+    ws.onopen = () => console.log('WS connected');
+    ws.onclose = () => {
+      console.log('WS disconnected, reconnecting in 2s...');
+      setTimeout(() => {
+        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const newWs = new WebSocket(`${protocol}//${location.host}/ws`);
+        wsRef.current = newWs;
+      }, 2000);
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'NEW_REVIEW') {
+          setCountdown(300);
+          setCurrentJob(msg.payload);
+        } else if (msg.type === 'COUNTDOWN') {
+          setCountdown(msg.seconds_remaining);
+        } else if (msg.type === 'CLEARED') {
+          setCurrentJob(null);
+          setCountdown(300);
+        }
+      } catch (e) {
+        console.error('WS message error:', e);
+      }
+    };
+
+    return () => ws.close();
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (!currentJob) return;
+      const key = e.key.toUpperCase();
+      if (key === 'A') {
+        setCurrentJob(prev => prev && (() => { sendDecision(prev.job_id, 'APPROVE'); return null; })());
+      } else if (key === 'S') {
+        setCurrentJob(prev => prev && (() => { sendDecision(prev.job_id, 'SKIP'); return null; })());
+      } else if (key === 'E') {
+        setCurrentJob(prev => prev && (() => { sendDecision(prev.job_id, 'EDIT'); return null; })());
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [currentJob]);
+
+  const sendDecision = useCallback((jobId, action) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'DECISION', job_id: jobId, action }));
+    }
+  }, []);
+
+  const handleDecision = useCallback((jobId, action) => {
+    setCurrentJob(null);
+    setCountdown(300);
+    sendDecision(jobId, action);
+  }, [sendDecision]);
+
+  return (
+    <>
+      <div className="topbar">
+        <h1>Nex<span>Apply</span> — Review Queue</h1>
+        <span className={`badge${currentJob ? ' active' : ''}`}>
+          {currentJob ? '1 pending' : 'idle'}
+        </span>
+      </div>
+      <div className="content">
+        {currentJob ? (
+          <ReviewCard job={currentJob} onDecision={handleDecision} countdown={countdown} />
+        ) : (
+          <EmptyState />
+        )}
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

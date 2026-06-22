@@ -6,3 +6,6 @@ aiohttp
 groq
 python-dotenv
 pypdf
+fastapi
+uvicorn
+Pillow

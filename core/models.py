@@ -54,16 +54,23 @@ class ApplicationPayload:
     status: str = "PENDING_REVIEW"
     filled_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     page: Any = None
+    approval_event: Any = None
+    decision: str = ""
 
     STATUS_PENDING_REVIEW = "PENDING_REVIEW"
     STATUS_MANUAL_REQUIRED = "MANUAL_REQUIRED"
     STATUS_NEEDS_COOKIES = "NEEDS_COOKIES"
     STATUS_FAILED = "FAILED"
     STATUS_UNKNOWN_FORM = "UNKNOWN_FORM"
+    STATUS_APPLIED = "APPLIED"
+    STATUS_SKIPPED = "SKIPPED"
+    STATUS_TIMEOUT = "TIMEOUT"
+    STATUS_SUBMIT_FAILED = "SUBMIT_FAILED"
 
     def to_dict(self) -> dict:
         d = asdict(self)
         d.pop("page", None)
+        d.pop("approval_event", None)
         return d
 
     def to_jsonl(self) -> str:

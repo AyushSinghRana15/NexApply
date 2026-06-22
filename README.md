@@ -31,7 +31,7 @@ python3 scripts/save_cookies.py linkedin
 python3 scripts/save_cookies.py naukri
 python3 scripts/save_cookies.py internshala
 
-# Run
+# Run (CLI review mode — type 'a <job_id>' to approve, 's <job_id>' to skip)
 python3 main.py
 ```
 
@@ -45,12 +45,12 @@ Requires real-time monitoring + parallel execution + pre-cached tailoring.
 │                        NEXAPPLY RUNTIME                          │
 ├──────────────┬──────────────────┬──────────────────┬─────────────┤
 │  RadarAgent  │   TailorAgent    │   ApplyFleet      │  GuardAgent │
-│  (Watchers)  │  (LLM + Resume)  │  (Playwright)     │  (Phase 4)  │
+│  (Phase 1)   │  (Phase 2)       │  (Phase 3)        │  (Phase 4)  │
 ├──────────────┼──────────────────┼──────────────────┼─────────────┤
 │ LinkedIn RSS │ Classifier (5ms) │ Worker: LinkedIn  │ Review card │
-│ Indeed RSS   │ → keyword match  │ Worker: Indeed    │ Approve/    │
-│ Naukri scraper│ Groq API (8s)   │ Worker: Naukri    │ Edit/Skip   │
-│ Internshala  │ → Ollama fallback│ Worker: Internshala│ Auto-skip   │
+│ Indeed RSS   │ → keyword match  │ Worker: Indeed    │ CLI approve │
+│ Naukri scraper│ Groq API (8s)   │ Worker: Naukri    │ / skip /    │
+│ Internshala  │ → Ollama fallback│ Worker: Internshala│ auto-skip   │
 │ Dedup (Redis)│ Scorer (0-100)   │ Form fill + pause │ after 5min  │
 └──────┬───────┴──────┬───────────┴──────────┬───────┴─────────────┘
        │              │                      │
@@ -59,9 +59,21 @@ Requires real-time monitoring + parallel execution + pre-cached tailoring.
   (JobEvents)     (TailoredResult)   (ApplicationPayload)
 ```
 
-**Agent pipeline:** RadarAgent → `job_queue` → TailorAgent → `tailor_queue` → ApplyFleet → `guard_queue` → GuardAgent (Phase 4)
+**Agent pipeline:** RadarAgent → `job_queue` → TailorAgent → `tailor_queue` → ApplyFleet → `guard_queue` → GuardAgent
 
-## Speed Strategy
+## Agent Communication
+
+Agents communicate via `asyncio.Queue` with no external broker dependency:
+
+```
+job_queue = JobQueue()      # Radar → Tailor
+tailor_queue = JobQueue()   # Tailor → ApplyFleet
+guard_queue = JobQueue()    # ApplyFleet → GuardAgent
+```
+
+Each job flows through the full pipeline in under 2 minutes. GuardAgent returns a decision in <5 min (with auto-skip timeout).
+
+## Benchmarks
 
 | Step | Target | Actual |
 |------|--------|--------|
@@ -71,18 +83,84 @@ Requires real-time monitoring + parallel execution + pre-cached tailoring.
 | Resume injection | 1s | <10ms |
 | Total tailor time | 10s | ~1-2s |
 | Form fill (browser) | 30s | ~15-25s |
+| Human review (Guard) | 5min | ~30s (typical) |
 
-## Agent Communication
+---
 
-Agents communicate via `asyncio.Queue` with no external broker dependency:
+## GuardAgent (Phase 4)
+
+GuardAgent is the human-in-the-loop review gate. It receives `ApplicationPayload` objects (with `approval_event` for signaling), pushes review cards to a live WebSocket dashboard, and waits for a decision before ApplyFleet submits.
+
+### How it works
+
+1. **Signal** — ApplyFleet creates `asyncio.Event()` on the payload, enqueues to `guard_queue`, then **blocks on `approval_event.wait()`**
+2. **Broadcast** — GuardAgent broadcasts `NEW_REVIEW` via WebSocket to the dashboard
+3. **Countdown** — GuardAgent starts a 300s timer; broadcasts `COUNTDOWN` every 5s
+4. **Decide** — User clicks APPROVE / EDIT / SKIP on the dashboard (or presses A / E / S)
+5. **Signal back** — GuardAgent sets `payload.decision` and calls `payload.approval_event.set()`
+6. **Submit** — ApplyFleet wakes up, reads `payload.decision`:
+   - `APPROVE` → `worker.submit()` clicks the form's submit button, logs `APPLIED`
+   - `EDIT` → logs `APPLIED` (manual completion), browser stays visible
+   - `SKIP` / `TIMEOUT` → closes browser, logs `SKIPPED`
+7. **Close** → Browser is closed, semaphore released, next job can start
+
+### Dashboard
+
+A real-time review dashboard opens at `http://localhost:8000` when `main.py` starts:
+- Dark-themed card showing job details (40%) + screenshot (60%)
+- Animated match score bar (green ≥75, yellow 51-74, red ≤50)
+- Live countdown timer (turns red under 60s)
+- APPROVE (A), EDIT (E), SKIP (S) buttons with keyboard shortcuts
+- Card slides in/out on transitions
+- Empty state with pulsing dot when no reviews pending
+
+### Event Flow
 
 ```
-job_queue = JobQueue()      # Radar → Tailor
-tailor_queue = JobQueue()   # Tailor → ApplyFleet
-guard_queue = JobQueue()    # ApplyFleet → GuardAgent (Phase 4)
+ApplyFleet          GuardAgent         Dashboard         User
+    │                   │                  │               │
+    │ enqueue──────────>│                  │               │
+    │ (payload with     │   NEW_REVIEW     │               │
+    │  approval_event)  │─────────────────>│               │
+    │                   │   COUNTDOWN (5s) │               │
+    │                   │─────────────────>│               │
+    │ wait...           │                  │──────APPROVE──│
+    │                   │<─────────────────│               │
+    │<─decision.set()───│                  │               │
+    │ submit()          │   CLEARED        │               │
+    │ close()           │─────────────────>│               │
 ```
 
-All queues live in-process. Each job flows through the full pipeline in under 2 minutes.
+### Status Codes
+
+| Status | Phase | Meaning |
+|--------|-------|---------|
+| `PENDING_REVIEW` | Fleet | Form filled, waiting for human |
+| `APPLIED` | Fleet | Approved + submitted successfully |
+| `SKIPPED` | Fleet | Rejected or timed out |
+| `TIMEOUT` | Guard | Auto-skipped after 5 min |
+| `SUBMIT_FAILED` | Fleet | Approve clicked but submit button not found |
+| `MANUAL_REQUIRED` | Fleet | Redirected to external ATS (e.g. Workday) |
+| `NEEDS_COOKIES` | Fleet | Session expired, cookies need refresh |
+| `FAILED` | Fleet | Form fill failed (timeout / error) |
+| `UNKNOWN_FORM` | Fleet | Form structure not recognised |
+
+### Decision Logging
+
+Every decision is appended to `logs/applications.jsonl`:
+```json
+{"job_id":"test-001","platform":"indeed","title":"Backend Engineer","company":"Razorpay","match_score":84,"decision":"APPROVE","decided_at":"2024-01-01T10:00:35Z"}
+```
+
+### Testing Without Real Jobs
+
+```bash
+python3 main.py --test
+```
+
+This injects 2 fake `ApplicationPayload` objects directly into `guard_queue` (no Radar/Tailor/Fleet needed). The dashboard opens at `localhost:8000` — approve or skip the test cards to verify the full flow.
+
+---
 
 ## ApplyFleet (Phase 3)
 
@@ -185,6 +263,7 @@ score = (keywords_found_in_base / 5) × 60   # 60% keyword match
 ## Project Structure
 ```
 ├── core/
+│   ├── guard.py         # GuardAgent — human review gate (Phase 4)
 │   ├── radar.py         # RadarAgent — job watchers per platform
 │   ├── tailor.py        # TailorAgent — resume tailoring pipeline
 │   ├── fleet.py         # ApplyFleet — Playwright orchestrator
@@ -214,11 +293,12 @@ score = (keywords_found_in_base / 5) × 60   # 60% keyword match
 │   └── keyword_extraction.txt   # Versioned Groq/Ollama prompt
 ├── logs/
 │   ├── resumes/                 # Saved tailored resumes per application
-│   └── screenshots/             # One PNG per application attempt
+│   ├── screenshots/             # One PNG per application attempt
+│   └── guard_decisions.jsonl    # Every approve/skip logged here
 ├── selectors.yaml      # DOM selectors per platform (no hardcoded selectors)
 ├── profile.yaml        # Your answer bank (name, CTC, cover letter, etc.)
-├── config.yaml         # Platform toggles, filters, tailor & fleet config
-├── main.py             # Entry point — launches Radar + Tailor + Fleet
+├── config.yaml         # Platform toggles, filters, tailor, fleet & guard config
+├── main.py             # Entry point — launches all 4 agents
 ├── .env.example        # Template for environment variables
 └── requirements.txt    # Dependencies
 ```
@@ -257,6 +337,10 @@ fleet:
   human_delay_min: 0.5
   human_delay_max: 1.2
   resume_format: "txt"
+
+guard:
+  review_timeout_seconds: 300    # Auto-skip after 5 min
+  min_match_score: 60            # Skip jobs below this score
 ```
 
 ## Environment
@@ -269,8 +353,9 @@ GROQ_API_KEY=gsk_your_key_here   # Required — get one free at console.groq.com
 Optional config still uses environment variables:
 
 ```bash
-REDIS_URL=redis://localhost:6379    # Optional (in-memory fallback)
-OLLAMA_HOST=http://localhost:11434  # Optional (Ollama fallback)
+REDIS_URL=redis://localhost:6379       # Optional (in-memory fallback)
+OLLAMA_HOST=http://localhost:11434     # Optional (Ollama fallback)
+REVIEW_TIMEOUT_SECONDS=300             # Optional (overrides config.yaml)
 ```
 
 ## Adding a New Resume Category
@@ -286,4 +371,5 @@ OLLAMA_HOST=http://localhost:11434  # Optional (Ollama fallback)
 | 1 | Job Radar — RSS + scrapers | Done |
 | 2 | Resume tailoring + Groq/Ollama | Done |
 | 3 | Apply Fleet — Playwright workers | Done |
-| 4 | Review dashboard | Not started |
+| 4 | GuardAgent — human review gate | Done |
+| 5 | Review dashboard | Not started |

@@ -122,6 +122,29 @@ class BaseWorker:
         await self.page.screenshot(path=filepath, full_page=False)
         return filepath
 
+    async def submit(self, platform: str) -> bool:
+        selectors = self._platform_selectors(platform).get("submit_button", [])
+        selectors += [
+            "button[type='submit']",
+            "input[type='submit']",
+            "button:has-text('Submit')",
+            "button:has-text('Apply')",
+            "button:has-text('Send')",
+            "button:has-text('Save')",
+        ]
+        for selector in selectors:
+            try:
+                locator = self.page.locator(selector)
+                count = await locator.count()
+                if count > 0:
+                    await locator.first.click()
+                    await asyncio.sleep(2)
+                    return True
+            except Exception:
+                continue
+        self.log.warn(f"Submit button not found for {platform}")
+        return False
+
     async def close(self):
         try:
             if self.page:

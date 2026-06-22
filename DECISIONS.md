@@ -50,6 +50,22 @@ This file tracks key architectural decisions, changes, and context throughout th
 - Added `cookies/`, `logs/screenshots/`, `scripts/` directories.
 - Updated `.gitignore` for all new log/asset directories.
 
+### 2026-06-22 — Phase 4: GuardAgent complete
+
+- Built GuardAgent (`core/guard.py`) — human-in-the-loop review gate for all applications.
+- Consumes ApplicationPayloads from ApplyFleet's `guard_queue` with live Playwright `Page` attached.
+- CLI review mode: prints a review card to terminal with job details, accepts `a <job_id>` (approve) and `s <job_id>` (skip) via stdin.
+- Auto-skip after `review_timeout_seconds` (default 300s, configurable in `config.yaml`) — handles unattended runs.
+- On approve: clicks submit button via the live page using platform-specific selectors from `selectors.yaml` (with generic fallbacks: `button[type='submit']`, etc.).
+- On skip: closes browser gracefully, logs decision to `logs/guard_decisions.jsonl`.
+- Added `submit_button` selectors for Indeed and Naukri in `selectors.yaml`.
+- Added `guard:` config section to `config.yaml` (review_timeout_seconds, min_match_score).
+- Added `APPLIED`, `SKIPPED`, `SUBMIT_FAILED` status constants to `ApplicationPayload` in `core/models.py`.
+- Removed placeholder `guard_consumer` from `main.py` — replaced with full GuardAgent integration.
+- Updated README.md with full Phase 4 docs: review card example, status code table, decision logging format.
+- Added `logs/guard_decisions.jsonl` to `.gitignore`.
+- Note: Phase 5 (Dashboard UI) remains — GuardAgent exposes the `_pending` dict and approve/skip methods for future FastAPI/WebSocket integration.
+
 ### 2025-06-20 — Phase 1: Job Radar complete
 
 - Built RadarAgent with 4 platform watchers (LinkedIn/Indeed RSS, Naukri/Internshala scraping).

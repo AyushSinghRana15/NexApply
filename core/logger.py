@@ -105,3 +105,35 @@ class Logger:
 
     def fleet_heartbeat(self, pending: int, failed: int, manual: int):
         self._out(f"🚀 ApplyFleet alive — {pending} pending, {failed} failed, {manual} manual")
+
+    def guard_start(self):
+        self._out(f"🛡️  GuardAgent started — watching guard_queue")
+
+    def dashboard_start(self, url: str):
+        self._out(f"🌐 Dashboard running → {url}")
+
+    def guard_review_ready(self, title: str, company: str, platform: str, score: int):
+        self._out(f"📬 REVIEW READY — \"{title} @ {company}\" ({platform}) score: {score}")
+
+    def guard_countdown(self, seconds: int):
+        self._out(f"⏱️  Auto-skip in {seconds}s if no response")
+
+    def guard_approved(self, title: str, company: str):
+        self._out(f"✅ APPROVED — \"{title} @ {company}\" — signaling ApplyFleet")
+
+    def guard_applied(self, title: str, company: str):
+        self._out(f"🎉 APPLIED — \"{title} @ {company}\" logged to applications.jsonl")
+
+    def guard_skipped(self, title: str, company: str, reason: str = ""):
+        suffix = f" — {reason}" if reason else ""
+        self._out(f"❌ SKIPPED — \"{title} @ {company}\"{suffix}")
+
+    def guard_timeout(self, title: str, company: str, seconds: int):
+        self._out(f"⏰ TIMEOUT — \"{title} @ {company}\" — auto-skipped after {seconds}s")
+
+    def guard_submit_failed(self, title: str, company: str, error: str = ""):
+        suffix = f" — {error}" if error else ""
+        self._out(f"❌ SUBMIT FAILED — \"{title} @ {company}\"{suffix}")
+
+    def guard_heartbeat(self, pending: int):
+        self._out(f"🛡️  GuardAgent alive — {pending} reviews pending")

@@ -7,7 +7,6 @@ from core.models import ApplicationPayload
 from core.queue import JobQueue
 
 LOGS_FILE = "logs/applications.jsonl"
-SCREENSHOTS_DIR = "logs/screenshots"
 
 
 class ApplyFleet:
@@ -22,9 +21,10 @@ class ApplyFleet:
             self._fleet_cfg.get("max_concurrent_browsers", 3)
         )
         self._pending = 0
+        self._applied = 0
         self._failed = 0
         self._manual = 0
-        os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
+        os.makedirs("logs/screenshots", exist_ok=True)
 
     async def start(self):
         self.log.fleet_start("ApplyFleet started — 4 workers ready")
@@ -63,7 +63,6 @@ class ApplyFleet:
                 "naukri": "NaukriWorker",
                 "internshala": "InternshalaWorker",
             }
-
             mod_map = {
                 "linkedin": "workers.linkedin",
                 "indeed": "workers.indeed",
@@ -103,17 +102,45 @@ class ApplyFleet:
 
             if payload.status == ApplicationPayload.STATUS_PENDING_REVIEW:
                 self._pending += 1
-            elif payload.status in (
-                ApplicationPayload.STATUS_FAILED,
-                ApplicationPayload.STATUS_UNKNOWN_FORM,
-            ):
-                self._failed += 1
-            elif payload.status == ApplicationPayload.STATUS_MANUAL_REQUIRED:
-                self._manual += 1
+                payload.approval_event = asyncio.Event()
+                await self.output_queue.enqueue(payload)
+
+                await payload.approval_event.wait()
+
+                decision = payload.decision
+                self._pending -= 1
+                self.log.detail(f"Decision for {payload.job_id}: {decision}")
+
+                if decision == "APPROVE":
+                    submitted = await worker.submit(platform)
+                    if submitted:
+                        payload.status = ApplicationPayload.STATUS_APPLIED
+                        self._applied += 1
+                        self.log.guard_applied(payload.title, payload.company)
+                    else:
+                        payload.status = ApplicationPayload.STATUS_SUBMIT_FAILED
+                        self._failed += 1
+                        self.log.guard_submit_failed(payload.title, payload.company)
+                elif decision == "EDIT":
+                    payload.status = ApplicationPayload.STATUS_APPLIED
+                    self._applied += 1
+                    self.log.detail(f"EDIT — \"{payload.title} @ {payload.company}\" — manual completion")
+                else:
+                    payload.status = ApplicationPayload.STATUS_SKIPPED
+                    self.log.guard_skipped(payload.title, payload.company, decision.lower())
+
+                await worker.close()
+            else:
+                if payload.status in (
+                    ApplicationPayload.STATUS_FAILED,
+                    ApplicationPayload.STATUS_UNKNOWN_FORM,
+                ):
+                    self._failed += 1
+                elif payload.status == ApplicationPayload.STATUS_MANUAL_REQUIRED:
+                    self._manual += 1
+                await worker.close()
 
             self._log_application(payload)
-            await self.output_queue.enqueue(payload)
-            self.log.fleet_queued()
 
     def _log_application(self, payload: ApplicationPayload):
         os.makedirs(os.path.dirname(LOGS_FILE), exist_ok=True)

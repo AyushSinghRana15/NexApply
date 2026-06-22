@@ -5,6 +5,7 @@ __pycache__/
 logs/resumes/
 logs/screenshots/
 logs/applications.jsonl
+logs/guard_decisions.jsonl
 cookies/
 browser_profiles/
 

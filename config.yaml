@@ -29,3 +29,9 @@ fleet:
   human_delay_min: 0.5
   human_delay_max: 1.2
   resume_format: "txt"
+
+guard:
+  review_timeout_seconds: 300
+  max_pending_reviews: 3
+  dashboard_port: 8000
+  auto_skip_below_score: 60
