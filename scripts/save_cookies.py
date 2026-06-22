@@ -1,75 +1,67 @@
-"""
-One-time cookie saver per platform.
-
-Usage:
-    python3 scripts/save_cookies.py linkedin
-    python3 scripts/save_cookies.py indeed
-    python3 scripts/save_cookies.py naukri
-    python3 scripts/save_cookies.py internshala
-
-Opens a visible browser, navigates to login page,
-waits for you to log in manually (120s timeout),
-then saves cookies to cookies/{platform}_cookies.json.
-"""
-
 import asyncio
 import json
 import os
 import sys
-
 from playwright.async_api import async_playwright
 
 LOGIN_URLS = {
-    "linkedin": "https://www.linkedin.com/login",
-    "indeed": "https://secure.indeed.com/auth",
-    "naukri": "https://www.naukri.com/nlogin/login",
+    "linkedin":    "https://www.linkedin.com/login",
+    "indeed":      "https://secure.indeed.com/auth",
+    "naukri":      "https://www.naukri.com/nlogin/login",
     "internshala": "https://internshala.com/login",
+}
+
+SUCCESS_URLS = {
+    "linkedin":    lambda url: "linkedin.com/feed" in url,
+    "indeed":      lambda url: "indeed.com" in url and "auth" not in url,
+    "naukri":      lambda url: "naukri.com" in url and "login" not in url,
+    "internshala": lambda url: "internshala.com" in url and "login" not in url,
 }
 
 
 async def save_cookies(platform: str):
     if platform not in LOGIN_URLS:
-        print(f"❌ Unknown platform: {platform}")
-        print(f"   Choose from: {', '.join(LOGIN_URLS.keys())}")
+        print(f"Unknown platform: {platform}")
         sys.exit(1)
 
     login_url = LOGIN_URLS[platform]
-    cookie_dir = "cookies"
-    os.makedirs(cookie_dir, exist_ok=True)
-    cookie_path = os.path.join(cookie_dir, f"{platform}_cookies.json")
+    profile_dir = f"./browser_profiles/{platform}"
+    cookie_path = f"cookies/{platform}_cookies.json"
 
-    print(f"🔓 Opening browser for {platform}...")
-    print(f"🌐 Navigated to {login_url}")
-    print(f"⏳ Please log in manually within 120 seconds...")
+    os.makedirs("cookies", exist_ok=True)
+    os.makedirs(profile_dir, exist_ok=True)
+
+    print(f"Opening your Chrome for {platform}...")
+    print(f"Log in using EMAIL + PASSWORD (not Google SSO)")
+    print(f"Waiting up to 120 seconds for login...")
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)
-        context = await browser.new_context()
-        page = await context.new_page()
-        await page.goto(login_url, timeout=30000)
+        context = await p.chromium.launch_persistent_context(
+            user_data_dir=profile_dir,
+            channel="chrome",
+            headless=False,
+            args=["--disable-blink-features=AutomationControlled"],
+        )
+        page = context.pages[0] if context.pages else await context.new_page()
+        await page.goto(login_url, timeout=30000, wait_until="domcontentloaded")
 
         try:
-            await page.wait_for_url(
-                lambda url: url != login_url,
-                timeout=120000,
-            )
+            await page.wait_for_url(SUCCESS_URLS[platform], timeout=120000)
+            print("Login detected — collecting cookies...")
+            await asyncio.sleep(3)
         except Exception:
-            print("⏰ 120s timeout reached — saving whatever cookies exist")
-
-        await asyncio.sleep(2)
+            print("Timeout — saving whatever cookies exist")
 
         cookies = await context.cookies()
         with open(cookie_path, "w") as f:
             json.dump(cookies, f, indent=2)
 
         print(f"✅ {platform.capitalize()} cookies saved — {len(cookies)} cookies stored")
-        await browser.close()
+        await context.close()
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python3 scripts/save_cookies.py <platform>")
-        print(f"Platforms: {', '.join(LOGIN_URLS.keys())}")
         sys.exit(1)
-
     asyncio.run(save_cookies(sys.argv[1]))

@@ -3,5 +3,8 @@ __pycache__/
 .env
 *.pdf
 logs/resumes/
+logs/screenshots/
 logs/applications.jsonl
+cookies/
+browser_profiles/
 
