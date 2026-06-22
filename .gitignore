@@ -9,3 +9,5 @@ logs/guard_decisions.jsonl
 cookies/
 browser_profiles/
 
+nexapply.db
+*.pyc
