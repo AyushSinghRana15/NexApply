@@ -238,21 +238,29 @@ class RadarAgent:
                             await browser.close()
                             await asyncio.sleep(self._interval)
                             continue
-                        cards = await page.query_selector_all(".internship_meta, .individual_internship, .card")
+                        cards = await page.query_selector_all(".individual_internship")
                         self.log.detail(f"Internshala: found {len(cards)} internship cards")
                         for card in cards[:10]:
                             try:
-                                title_el = await card.query_selector(".title a, h3 a, .heading")
+                                title_el = await card.query_selector("h2.job-internship-name a.job-title-hre")
                                 title = await title_el.inner_text() if title_el else "Unknown"
-                                company_el = await card.query_selector(".company_name, .company")
-                                company = await company_el.inner_text() if company_el else "Unknown"
-                                link_el = await card.query_selector("a")
+                                title = title.strip()
+
+                                logo_el = await card.query_selector(".internship_logo img")
+                                company = await logo_el.get_attribute("alt") if logo_el else "Unknown"
+
+                                link_el = title_el
                                 link = await link_el.get_attribute("href") if link_el else ""
                                 if link and not link.startswith("http"):
                                     link = "https://internshala.com" + link
+
+                                location_el = await card.query_selector(".locations, .row-1-item.locations")
+                                location = await location_el.inner_text() if location_el else "Remote"
+                                location = location.strip()
+
                                 desc = f"{title} at {company}"
                                 await self._emit_job("internshala", title.strip(), company.strip(),
-                                                     "Remote", desc, link, "")
+                                                     location, desc, link, "")
                             except Exception:
                                 continue
                     except Exception as e:
