@@ -3,20 +3,21 @@ import sys
 
 import yaml
 
+from core.fleet import ApplyFleet
 from core.logger import Logger
 from core.queue import JobQueue
 from core.radar import RadarAgent
 from core.tailor import TailorAgent
 
 
-async def phase3_consumer(queue: JobQueue, log: Logger):
+async def guard_consumer(queue: JobQueue, log: Logger):
     while True:
-        result = await queue.dequeue()
-        if result is None:
+        payload = await queue.dequeue()
+        if payload is None:
             await asyncio.sleep(0.1)
             continue
-        log.detail(f"[Phase 3] TailoredResult waiting — {result.title} @ {result.company} | "
-                   f"score: {result.match_score}/100 | queue depth: {queue.qsize()}")
+        log.detail(f"[Guard] ApplicationPayload received — {payload.title} @ {payload.company} | "
+                   f"status: {payload.status} | queue depth: {queue.qsize()}")
 
 
 async def main():
@@ -32,19 +33,23 @@ async def main():
             "polling_interval_seconds": 30,
             "filters": {},
             "tailor": {"min_match_score": 60},
+            "fleet": {"max_concurrent_browsers": 3, "headless": True},
         }
 
     job_queue = JobQueue()
     tailor_queue = JobQueue()
+    guard_queue = JobQueue()
 
     radar = RadarAgent(config, job_queue)
     tailor = TailorAgent(config, job_queue, tailor_queue)
+    fleet = ApplyFleet(config, tailor_queue, guard_queue)
 
     radar_task = asyncio.create_task(radar.start())
     tailor_task = asyncio.create_task(tailor.start())
-    consumer_task = asyncio.create_task(phase3_consumer(tailor_queue, log))
+    fleet_task = asyncio.create_task(fleet.start())
+    guard_task = asyncio.create_task(guard_consumer(guard_queue, log))
 
-    await asyncio.gather(radar_task, tailor_task, consumer_task)
+    await asyncio.gather(radar_task, tailor_task, fleet_task, guard_task)
 
 
 if __name__ == "__main__":

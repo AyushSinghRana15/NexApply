@@ -1,6 +1,7 @@
+import json
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
-from typing import List
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 
@@ -36,3 +37,34 @@ class TailoredResult:
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+
+@dataclass
+class ApplicationPayload:
+    job_id: str = ""
+    platform: str = ""
+    title: str = ""
+    company: str = ""
+    apply_url: str = ""
+    match_score: int = 0
+    keywords_injected: List[str] = field(default_factory=list)
+    resume_variant: str = ""
+    screenshot_path: str = ""
+    form_data_used: Dict[str, str] = field(default_factory=dict)
+    status: str = "PENDING_REVIEW"
+    filled_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    page: Any = None
+
+    STATUS_PENDING_REVIEW = "PENDING_REVIEW"
+    STATUS_MANUAL_REQUIRED = "MANUAL_REQUIRED"
+    STATUS_NEEDS_COOKIES = "NEEDS_COOKIES"
+    STATUS_FAILED = "FAILED"
+    STATUS_UNKNOWN_FORM = "UNKNOWN_FORM"
+
+    def to_dict(self) -> dict:
+        d = asdict(self)
+        d.pop("page", None)
+        return d
+
+    def to_jsonl(self) -> str:
+        return json.dumps(self.to_dict(), default=str)

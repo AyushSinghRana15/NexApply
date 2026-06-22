@@ -1,0 +1,84 @@
+indeed:
+  first_name:
+    - input[name="first_name"]
+    - input[id*="first"]
+    - input[placeholder*="First"]
+  last_name:
+    - input[name="last_name"]
+    - input[id*="last"]
+    - input[placeholder*="Last"]
+  email:
+    - input[name="email"]
+    - input[type="email"]
+    - input[placeholder*="Email"]
+  phone:
+    - input[name="phone"]
+    - input[type="tel"]
+    - input[placeholder*="Phone"]
+  resume_upload:
+    - input[type="file"]
+  cover_letter:
+    - textarea[name="cover_letter"]
+    - textarea[placeholder*="cover"]
+    - textarea[id*="cover"]
+
+linkedin:
+  easy_apply_button:
+    - button[aria-label="Easy Apply"]
+    - button:has-text("Easy Apply")
+    - button[data-control-name="easy_apply"]
+  next_button:
+    - button[aria-label="Next"]
+    - button:has-text("Next")
+    - button[aria-label="Continue"]
+  review_button:
+    - button[aria-label="Review"]
+    - button:has-text("Review")
+  submit_button:
+    - button[aria-label="Submit application"]
+    - button:has-text("Submit")
+  phone:
+    - input[name="phone"]
+    - input[id*="phone"]
+    - input[placeholder*="Phone"]
+  resume_upload:
+    - input[type="file"]
+
+naukri:
+  apply_button:
+    - button:has-text("Apply")
+    - button[class*="apply"]
+    - a[class*="apply"]
+  cover_letter:
+    - textarea[class*="cover"]
+    - textarea[id*="cover"]
+    - textarea[placeholder*="cover"]
+  notice_period:
+    - input[name="noticePeriod"]
+    - select[name="noticePeriod"]
+    - input[placeholder*="notice"]
+  current_ctc:
+    - input[name="currentCtc"]
+    - input[placeholder*="current"]
+    - input[name="currCTC"]
+  expected_ctc:
+    - input[name="expectedCtc"]
+    - input[placeholder*="expected"]
+    - input[name="expCTC"]
+  resume_upload:
+    - input[type="file"]
+
+internshala:
+  cover_letter:
+    - textarea[name="cover_letter"]
+    - textarea[class*="cover"]
+    - textarea[placeholder*="cover"]
+  availability:
+    - select[name="availability"]
+    - input[name*="avail"]
+    - select[id*="avail"]
+  resume_upload:
+    - input[type="file"]
+  submit_button:
+    - button:has-text("Submit")
+    - button[type="submit"]

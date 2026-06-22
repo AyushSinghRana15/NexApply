@@ -1,0 +1,23 @@
+personal:
+  first_name: "Ayush"
+  last_name: "Singh Rana"
+  email: "your@email.com"
+  phone: "+91XXXXXXXXXX"
+  location: "Delhi, India"
+  linkedin_url: "https://linkedin.com/in/yourprofile"
+  github_url: "https://github.com/AyushSinghRana15"
+  portfolio_url: ""
+
+professional:
+  current_title: "Software Engineer"
+  years_of_experience: "2"
+  notice_period: "Immediate"
+  current_ctc: "6 LPA"
+  expected_ctc: "10 LPA"
+  willing_to_relocate: "Yes"
+  work_preference: "Remote / Hybrid"
+
+cover_letter_template: |
+  I am excited to apply for the {title} role at {company}.
+  My experience with {keywords} makes me a strong fit.
+  I look forward to contributing to your team.

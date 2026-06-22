@@ -73,3 +73,35 @@ class Logger:
     def tailor_heartbeat(self, tailored: int, skipped: int, reason: str = ""):
         suffix = f" ({reason})" if reason else ""
         self._out(f"🧠 TailorAgent alive — {tailored} tailored, {skipped} skipped{suffix}")
+
+    def fleet_start(self, msg: str):
+        self._out(f"🚀 {msg}")
+
+    def cookies_status(self, platform: str, status: str):
+        emoji = "✅" if "loaded" in status else "⚠️"
+        self._out(f"{emoji} {platform.capitalize()} cookies {status}")
+
+    def applying(self, title: str, platform: str):
+        self._out(f"🌐 APPLYING — \"{title}\" ({platform})")
+
+    def browser_open(self, msg: str):
+        self._out(f"🔓 {msg}")
+
+    def filling(self, field: str, value: str):
+        display = value[:40] + "..." if len(value) > 40 else value
+        self._out(f"📝 Filling field: {field} → \"{display}\"")
+
+    def uploading(self, path: str):
+        self._out(f"📎 Uploading resume → {path}")
+
+    def screenshot_saved(self, path: str):
+        self._out(f"📸 Screenshot saved → {path}")
+
+    def paused(self, msg: str):
+        self._out(f"⏸️  {msg}")
+
+    def fleet_queued(self):
+        self._out("📤 ApplicationPayload sent to guard_queue")
+
+    def fleet_heartbeat(self, pending: int, failed: int, manual: int):
+        self._out(f"🚀 ApplyFleet alive — {pending} pending, {failed} failed, {manual} manual")

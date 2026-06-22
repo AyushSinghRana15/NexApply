@@ -21,3 +21,11 @@ tailor:
 
 profile:
   categories: ["engineering", "data", "product", "devops", "design", "ml"]
+
+fleet:
+  max_concurrent_browsers: 3
+  headless: true
+  page_timeout_seconds: 30
+  human_delay_min: 0.5
+  human_delay_max: 1.2
+  resume_format: "txt"

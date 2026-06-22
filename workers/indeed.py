@@ -1,0 +1,90 @@
+from typing import Optional
+
+from core.models import ApplicationPayload, TailoredResult
+from workers.base import BaseWorker
+
+
+class IndeedWorker(BaseWorker):
+
+    async def apply(self, result: TailoredResult) -> Optional[ApplicationPayload]:
+        await self.launch()
+        try:
+            await self.load_cookies("indeed")
+        except FileNotFoundError:
+            self.log.warn("Indeed cookies not found — worker disabled")
+            await self.close()
+            return None
+
+        self.log.browser_open("Browser opened — navigating to apply URL")
+        try:
+            await self.page.goto(result.apply_url, timeout=30000)
+        except Exception as e:
+            self.log.error(f"Page load timeout — {e}")
+            await self.close()
+            return ApplicationPayload(
+                job_id=result.job_id, platform=result.platform,
+                title=result.title, company=result.company,
+                apply_url=result.apply_url, match_score=result.match_score,
+                keywords_injected=result.keywords_injected,
+                resume_variant=result.resume_variant,
+                status=ApplicationPayload.STATUS_FAILED,
+            )
+
+        if "indeed.com" not in self.page.url:
+            self.log.warn(f"Redirected to external ATS — {self.page.url}")
+            await self.close()
+            return ApplicationPayload(
+                job_id=result.job_id, platform=result.platform,
+                title=result.title, company=result.company,
+                apply_url=result.apply_url, match_score=result.match_score,
+                keywords_injected=result.keywords_injected,
+                resume_variant=result.resume_variant,
+                status=ApplicationPayload.STATUS_MANUAL_REQUIRED,
+            )
+
+        p = self.profile["personal"]
+        prof = self.profile["professional"]
+        keywords = ", ".join(result.keywords_injected)
+        cover = self.profile["cover_letter_template"].format(
+            title=result.title, company=result.company, keywords=keywords
+        )
+
+        fields = {
+            "first_name": p["first_name"],
+            "last_name": p["last_name"],
+            "email": p["email"],
+            "phone": p["phone"],
+            "cover_letter": cover,
+        }
+
+        form_data = {}
+        for field_name, value in fields.items():
+            self.log.filling(field_name, value)
+            ok = await self.smart_fill(field_name, value, "indeed")
+            if ok:
+                form_data[field_name] = value
+
+        self.log.uploading(f"logs/resumes/{result.job_id}_{result.company}_tailored.txt")
+        await self.upload_resume(result.tailored_resume, "indeed")
+        form_data["resume_uploaded"] = "yes"
+
+        screenshot = await self.take_screenshot(result.job_id, result.company)
+        self.log.screenshot_saved(screenshot)
+
+        payload = ApplicationPayload(
+            job_id=result.job_id,
+            platform=result.platform,
+            title=result.title,
+            company=result.company,
+            apply_url=result.apply_url,
+            match_score=result.match_score,
+            keywords_injected=result.keywords_injected,
+            resume_variant=result.resume_variant,
+            screenshot_path=screenshot,
+            form_data_used=form_data,
+            status=ApplicationPayload.STATUS_PENDING_REVIEW,
+            page=self.page,
+        )
+
+        self.log.paused("PAUSED — waiting for GuardAgent approval")
+        return payload
