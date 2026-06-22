@@ -9,3 +9,7 @@ pypdf
 fastapi
 uvicorn
 Pillow
+sqlalchemy
+alembic
+pydantic-settings
+websockets
