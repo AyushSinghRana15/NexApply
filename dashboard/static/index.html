@@ -228,17 +228,13 @@ function App() {
     const handler = (e) => {
       if (!currentJob) return;
       const key = e.key.toUpperCase();
-      if (key === 'A') {
-        setCurrentJob(prev => prev && (() => { sendDecision(prev.job_id, 'APPROVE'); return null; })());
-      } else if (key === 'S') {
-        setCurrentJob(prev => prev && (() => { sendDecision(prev.job_id, 'SKIP'); return null; })());
-      } else if (key === 'E') {
-        setCurrentJob(prev => prev && (() => { sendDecision(prev.job_id, 'EDIT'); return null; })());
-      }
+      if (key === 'A') handleDecision(currentJob.job_id, 'APPROVE');
+      else if (key === 'S') handleDecision(currentJob.job_id, 'SKIP');
+      else if (key === 'E') handleDecision(currentJob.job_id, 'EDIT');
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [currentJob]);
+  }, [currentJob, handleDecision]);
 
   const sendDecision = useCallback((jobId, action) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
