@@ -3,6 +3,10 @@ import re
 import asyncio
 from typing import List, Tuple
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 GROQ_AVAILABLE = False
 try:
     from groq import AsyncGroq

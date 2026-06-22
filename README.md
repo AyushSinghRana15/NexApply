@@ -19,8 +19,8 @@ pip install -r requirements.txt
 # Install Playwright browser
 python -m playwright install chromium
 
-# Set your Groq API key (free at console.groq.com)
-export GROQ_API_KEY=gsk_your_key_here
+# Create .env file with your Groq API key (free at console.groq.com)
+echo 'GROQ_API_KEY=gsk_your_key_here' > .env
 
 # Start Redis (optional — in-memory fallback works)
 brew install redis && brew services start redis
@@ -166,8 +166,15 @@ profile:
 ```
 
 ## Environment
+Create a `.env` file in the project root:
+
 ```bash
-GROQ_API_KEY=           # Required for Groq (free at console.groq.com)
+GROQ_API_KEY=gsk_your_key_here   # Required — get one free at console.groq.com
+```
+
+Optional config still uses environment variables:
+
+```bash
 REDIS_URL=redis://localhost:6379    # Optional (in-memory fallback)
 OLLAMA_HOST=http://localhost:11434  # Optional (Ollama fallback)
 ```
