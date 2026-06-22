@@ -2,8 +2,8 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useStatsSummary, useStatsTimeline, useStatsPlatforms, useApplications } from "@/hooks/useQueries";
 import { useWSStore } from "@/stores/useWSStore";
-import { StatCard, Badge, ScoreBar } from "@/components/ui";
-import { LayoutDashboard, Send, Clock, AlertTriangle, BarChart3 } from "lucide-react";
+import { StatCard, Badge } from "@/components/ui";
+import { Send, Clock, AlertTriangle, BarChart3 } from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils";
 
 export function Dashboard() {

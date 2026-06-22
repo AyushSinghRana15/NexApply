@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useApplications } from "@/hooks/useQueries";
 import { Badge, Button, ScoreBar } from "@/components/ui";
-import { formatTimeAgo, platformIcon } from "@/lib/utils";
-import { ExternalLink } from "lucide-react";
+import { formatTimeAgo } from "@/lib/utils";
 
 export function Applications() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
-  const { data, isLoading } = useApplications({ page, status: statusFilter });
+  const { data } = useApplications({ page, status: statusFilter });
 
   return (
     <div className="space-y-6">

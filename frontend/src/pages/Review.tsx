@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { Check, X, Edit3, Clock, ExternalLink, ArrowLeft, ArrowRight } from "lucide-react";
+import { Check, X, Edit3, Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import { useWSStore } from "@/stores/useWSStore";
 import { Button, Badge, ScoreBar } from "@/components/ui";
 import { submitDecision } from "@/api/client";
-import { formatDate, matchScoreColor } from "@/lib/utils";
+import { matchScoreColor } from "@/lib/utils";
 import type { ReviewPayload } from "@/types";
 
 export function Review() {
