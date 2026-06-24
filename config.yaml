@@ -17,6 +17,8 @@ tailor:
   ollama_host: "http://localhost:11434"
   groq_timeout_seconds: 8
   use_llm: true
+  generate_cover_letter: true
+  max_cover_letter_words: 150
 
 profile:
   categories: ["engineering", "data", "product", "devops", "design", "ml"]
@@ -25,9 +27,43 @@ fleet:
   max_concurrent_browsers: 3
   headless: true
   page_timeout_seconds: 30
-  human_delay_min: 0.5
-  human_delay_max: 1.2
-  resume_format: "txt"
+  human_delay_min: 0.3
+  human_delay_max: 0.8
+  resume_format: "pdf"
+
+autonomy:
+  mode: "full"
+  auto_apply_threshold: 70
+  max_applications_per_day: 300
+  max_per_platform:
+    indeed: 100
+    naukri: 100
+    internshala: 100
+  cooldown_between_apps: 45
+  apply_hours:
+    start: "08:00"
+    end: "23:00"
+  skip_weekends: false
+  blacklist_companies:
+    - "TCS"
+    - "Wipro"
+    - "Infosys"
+    - "HCL"
+    - "Cognizant"
+  blacklist_keywords:
+    - "10+ years"
+    - "US citizens only"
+    - "only C++"
+    - "bond of"
+    - "night shift mandatory"
+  duplicate_window_days: 30
+
+safety:
+  max_failures_before_pause: 5
+  max_applications_per_hour: 30
+  emergency_stop_file: "STOP"
+  daily_report: true
+  report_hour: 21
 
 guard:
   review_timeout_seconds: 300

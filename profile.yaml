@@ -1,23 +1,192 @@
 personal:
+  full_name: "Ayush Singh Rana"
   first_name: "Ayush"
   last_name: "Singh Rana"
   email: "your@email.com"
   phone: "+91XXXXXXXXXX"
-  location: "Delhi, India"
+  whatsapp: "+91XXXXXXXXXX"
+  date_of_birth: "01/01/2000"
+  gender: "Male"
+  nationality: "Indian"
+  languages: ["English", "Hindi"]
+  location:
+    city: "Delhi"
+    state: "Delhi"
+    country: "India"
+    pincode: "110001"
   linkedin_url: "https://linkedin.com/in/yourprofile"
   github_url: "https://github.com/AyushSinghRana15"
   portfolio_url: ""
+  personal_website: ""
+
+education:
+  highest:
+    degree: "B.Tech"
+    field: "Computer Science"
+    college: "Your College Name"
+    university: "Your University"
+    grade: "8.5"
+    grade_type: "CGPA"
+    start_year: "2020"
+    end_year: "2024"
+    currently_enrolled: false
+  secondary:
+    school: "Your School Name"
+    board: "CBSE"
+    percentage: "85"
+    year: "2020"
+  high_school:
+    school: "Your School Name"
+    board: "CBSE"
+    percentage: "90"
+    year: "2018"
 
 professional:
   current_title: "Software Engineer"
   years_of_experience: "2"
+  fresher: false
   notice_period: "Immediate"
   current_ctc: "6 LPA"
   expected_ctc: "10 LPA"
+  expected_stipend: "25000"
   willing_to_relocate: "Yes"
   work_preference: "Remote / Hybrid"
+  availability: "Immediate"
+  internship_duration: "3-6 months"
 
-cover_letter_template: |
-  I am excited to apply for the {title} role at {company}.
-  My experience with {keywords} makes me a strong fit.
-  I look forward to contributing to your team.
+skills:
+  primary: ["Python", "FastAPI", "Redis", "PostgreSQL", "Docker"]
+  secondary: ["JavaScript", "React", "TypeScript", "GraphQL", "Kubernetes"]
+  tools: ["Git", "VS Code", "Postman", "Jira", "Figma"]
+  frameworks: ["FastAPI", "Flask", "React", "Tailwind CSS"]
+  databases: ["PostgreSQL", "Redis", "MongoDB", "SQLite"]
+  cloud: ["AWS", "GCP", "Docker", "Railway"]
+  soft_skills: ["Communication", "Teamwork", "Problem Solving", "Time Management"]
+
+experience:
+  - title: "Software Engineer"
+    company: "Current Company"
+    type: "Full-time"
+    start_date: "2024-01"
+    end_date: ""
+    currently_working: true
+    location: "Delhi, India"
+    description: "Building scalable backend services and APIs."
+    achievements:
+      - "Built REST APIs serving 10K+ daily requests"
+      - "Reduced response time by 40% through query optimization"
+      - "Implemented CI/CD pipeline reducing deployment time by 60%"
+
+  - title: "Backend Developer Intern"
+    company: "Previous Company"
+    type: "Internship"
+    start_date: "2023-06"
+    end_date: "2023-12"
+    currently_working: false
+    location: "Remote"
+    description: "Developed backend microservices and integrated third-party APIs."
+    achievements:
+      - "Built 5 microservices using FastAPI and PostgreSQL"
+      - "Integrated payment gateway and email notification system"
+
+projects:
+  - name: "NexApply"
+    description: "AI-powered autonomous job application agent that monitors platforms, tailors resumes, and applies automatically."
+    tech_stack: ["Python", "FastAPI", "Playwright", "Redis", "React"]
+    url: "https://github.com/AyushSinghRana15/NexApply"
+    github_url: "https://github.com/AyushSinghRana15/NexApply"
+    duration: "2025-Present"
+
+  - name: "E-Commerce API"
+    description: "Scalable REST API for an e-commerce platform with cart, orders, and payment processing."
+    tech_stack: ["FastAPI", "PostgreSQL", "Redis", "Docker"]
+    url: ""
+    github_url: ""
+    duration: "3 months"
+
+certifications:
+  - name: "AWS Certified Cloud Practitioner"
+    issuer: "Amazon Web Services"
+    issue_date: "2024-01"
+    expiry_date: "2027-01"
+    credential_id: ""
+    credential_url: ""
+    file_path: "documents/certificates/aws_cloud.pdf"
+
+  - name: "Python for Data Science"
+    issuer: "Coursera"
+    issue_date: "2023-06"
+    expiry_date: ""
+    credential_id: ""
+    credential_url: ""
+    file_path: "documents/certificates/python_coursera.pdf"
+
+  - name: "Machine Learning Specialization"
+    issuer: "Stanford Online"
+    issue_date: "2023-12"
+    expiry_date: ""
+    credential_id: ""
+    credential_url: ""
+    file_path: "documents/certificates/ml_google.pdf"
+
+internship_letters:
+  - company: "Previous Company"
+    role: "Backend Developer Intern"
+    start_date: "2023-06"
+    end_date: "2023-12"
+    stipend: "25000"
+    file_path: "documents/internship_letters/previous_company_internship.pdf"
+
+  - company: "Another Company"
+    role: "Software Intern"
+    start_date: "2023-01"
+    end_date: "2023-05"
+    stipend: "20000"
+    file_path: "documents/internship_letters/another_company_completion.pdf"
+
+offer_letters:
+  - company: "Current Company"
+    role: "Software Engineer"
+    ctc: "6 LPA"
+    joining_date: "2024-01-15"
+    file_path: "documents/offer_letters/current_company_offer.pdf"
+
+documents:
+  resume:
+    default: "resumes/engineering_v1.txt"
+    pdf: "resumes/resume.pdf"
+  photo: "documents/photo/passport_photo.jpg"
+  id_proof: "documents/id_proof/aadhar.pdf"
+  marksheets:
+    tenth: "documents/marksheets/tenth.pdf"
+    twelfth: "documents/marksheets/twelfth.pdf"
+    graduation: "documents/marksheets/graduation.pdf"
+
+screening_answers:
+  "Are you authorized to work in India?": "Yes"
+  "Do you require visa sponsorship?": "No"
+  "Are you willing to work in shifts?": "Yes"
+  "Are you comfortable with night shifts?": "No"
+  "Have you worked in a startup before?": "Yes"
+  "Are you willing to sign a bond?": "No"
+  "Do you have a laptop?": "Yes"
+  "Are you comfortable with remote work?": "Yes"
+  "Can you join immediately?": "Yes"
+  "Are you a fresher?": "No"
+  "Do you have a two-wheeler?": "No"
+
+references:
+  - name: "Prof. Name"
+    designation: "Professor"
+    company: "Your College"
+    email: "prof@college.edu"
+    phone: "+91XXXXXXXXXX"
+    relation: "Professor"
+
+social:
+  leetcode: ""
+  hackerrank: ""
+  codeforces: ""
+  kaggle: ""
+  medium: ""
+  twitter: ""

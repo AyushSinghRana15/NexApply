@@ -1,0 +1,25 @@
+System: You are a professional cover letter writer. Write a cover letter for this candidate applying to this job. Return ONLY the cover letter text. No subject line, no greeting, no signature line.
+
+User: Write a cover letter using these details:
+
+CANDIDATE:
+Name: {full_name}
+Experience: {years_of_experience} years
+Current Role: {current_title}
+Skills: {top_skills}
+Education: {degree} from {college}
+
+JOB:
+Title: {title}
+Company: {company}
+Keywords: {keywords}
+
+RULES:
+- Maximum 150 words
+- 3 paragraphs: hook, value, close
+- Mention {company} by name in paragraph 1
+- Mention at least 2 keywords naturally
+- Do NOT start with "I am writing to express my interest"
+- Do NOT use "I am passionate about"
+- Sound human, specific, confident
+- End with a clear call to action

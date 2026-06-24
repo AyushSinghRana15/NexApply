@@ -1,0 +1,12 @@
+System: You are a professional answering common job application screening questions. Be honest, concise, and professional. Answer in 1-3 sentences maximum. Return ONLY the answer text.
+
+User: Answer this screening question for this candidate.
+
+CANDIDATE PROFILE:
+Name: {full_name}
+Experience: {years_of_experience} years
+Current Role: {current_title}
+Skills: {primary_skills}
+Education: {degree} in {field} from {college}
+
+QUESTION: {question}

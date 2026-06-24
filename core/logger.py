@@ -37,6 +37,9 @@ class Logger:
     def error(self, msg: str):
         self._out(f"❌ {msg}")
 
+    def critical(self, msg: str):
+        self._out(f"🛑 {msg}")
+
     def heartbeat(self, queued: int, seen: int, skipped: int):
         self._out(f"💓 RadarAgent alive — {queued} jobs queued, {seen} seen, {skipped} skipped")
 
@@ -50,7 +53,7 @@ class Logger:
         self._out(f"📋 JOB RECEIVED — \"{title}\" ({platform})")
 
     def classify(self, category: str):
-        self._out(f"🔍 Classified → category: {category}")
+        self._out(f"🔍 Classified → {category}")
 
     def variant(self, variant: str):
         self._out(f"📄 Selected resume variant → {variant}")
@@ -68,7 +71,13 @@ class Logger:
         self._out(f"💾 Saved → {path}")
 
     def queued_tailor(self):
-        self._out(f"📤 TailoredResult queued → ready for ApplyFleet (Phase 3)")
+        self._out(f"📤 TailoredResult queued → ready for ApplyFleet")
+
+    def cover_letter(self, words: int):
+        self._out(f"✍️  Cover letter generated — {words} words")
+
+    def screening_answer(self, question: str):
+        self._out(f"❓ Screening answer generated for: {question}")
 
     def tailor_heartbeat(self, tailored: int, skipped: int, reason: str = ""):
         suffix = f" ({reason})" if reason else ""
@@ -89,10 +98,17 @@ class Logger:
 
     def filling(self, field: str, value: str):
         display = value[:40] + "..." if len(value) > 40 else value
-        self._out(f"📝 Filling field: {field} → \"{display}\"")
+        self._out(f"📝 Filling {field} → \"{display}\"")
+
+    def filling_field(self, field_name: str, value: str):
+        display = value[:40] + "..." if len(value) > 40 else value
+        self._out(f"    ✓ {field_name} → \"{display}\"")
 
     def uploading(self, path: str):
         self._out(f"📎 Uploading resume → {path}")
+
+    def upload_document(self, doc_type: str, path: str):
+        self._out(f"    ✓ {doc_type} → uploaded {path.split('/')[-1]}")
 
     def screenshot_saved(self, path: str):
         self._out(f"📸 Screenshot saved → {path}")
@@ -137,3 +153,33 @@ class Logger:
 
     def guard_heartbeat(self, pending: int):
         self._out(f"🛡️  GuardAgent alive — {pending} reviews pending")
+
+    def autonomous_approve(self, title: str, company: str, reason: str):
+        self._out(f"🤖 AUTO-APPROVE — \"{title} @ {company}\" — {reason}")
+
+    def autonomous_skip(self, title: str, company: str, reason: str):
+        self._out(f"⏭️  AUTO-SKIP — \"{title} @ {company}\" — {reason}")
+
+    def autonomous_submitted(self, title: str, company: str, platform: str):
+        self._out(f"🚀 SUBMITTED — \"{title} @ {company}\" ({platform})")
+
+    def autonomous_stats(self, daily: int, target: int, platform_counts: dict, avg_score: int):
+        platforms_str = " | ".join(f"{p}: {c}" for p, c in platform_counts.items())
+        self._out(f"📊 Today: {daily}/{target} | {platforms_str} | Score avg: {avg_score}")
+
+    def autonomous_cooldown(self, seconds: int):
+        self._out(f"⏳ Cooling down {seconds}s before next application...")
+
+    def autonomous_start(self, mode: str, profile_name: str, daily_target: int):
+        self._out(f"🤖 NexApply autonomous mode — {mode}")
+        self._out(f"📋 Profile loaded — {profile_name}")
+        self._out(f"🎯 Today's target: {daily_target} applications")
+
+    def watchdog(self, msg: str):
+        self._out(f"👀 {msg}")
+
+    def watchdog_sleep(self, msg: str):
+        self._out(f"😴 {msg}")
+
+    def report_sent(self, subject: str):
+        self._out(f"📧 Daily report sent — \"{subject}\"")

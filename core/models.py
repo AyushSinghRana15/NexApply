@@ -22,6 +22,13 @@ class JobEvent:
 
 
 @dataclass
+class GeneratedContent:
+    cover_letter: str = ""
+    screening_answers: Dict[str, str] = field(default_factory=dict)
+    summary: str = ""
+
+
+@dataclass
 class TailoredResult:
     job_id: str = ""
     platform: str = ""
@@ -34,6 +41,9 @@ class TailoredResult:
     match_score: int = 0
     llm_used: str = ""
     tailored_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    cover_letter: str = ""
+    screening_answers: Dict[str, str] = field(default_factory=dict)
+    generated_summary: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -56,6 +66,9 @@ class ApplicationPayload:
     page: Any = None
     approval_event: Any = None
     decision: str = ""
+    cover_letter: str = ""
+    screening_answers: Dict[str, str] = field(default_factory=dict)
+    generated_summary: str = ""
 
     STATUS_PENDING_REVIEW = "PENDING_REVIEW"
     STATUS_MANUAL_REQUIRED = "MANUAL_REQUIRED"
@@ -75,3 +88,15 @@ class ApplicationPayload:
 
     def to_jsonl(self) -> str:
         return json.dumps(self.to_dict(), default=str)
+
+
+@dataclass
+class DailyStats:
+    applied: int = 0
+    skipped: int = 0
+    failed: int = 0
+    avg_score: float = 0.0
+    interviews: int = 0
+    confirmations: int = 0
+    rejections: int = 0
+    platform_breakdown: Dict[str, int] = field(default_factory=dict)

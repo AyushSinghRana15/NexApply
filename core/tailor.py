@@ -2,7 +2,7 @@ import asyncio
 import os
 
 from core.classifier import classify_job
-from core.llm import extract_keypoints
+from core.llm import answer_screening_question, extract_keypoints, generate_cover_letter
 from core.logger import Logger
 from core.models import JobEvent, TailoredResult
 from core.queue import JobQueue
@@ -32,11 +32,21 @@ class TailorAgent:
         self._tailored_count = 0
         self._skipped_count = 0
         self._min_score = config.get("tailor", {}).get("min_match_score", 60)
+        self._gen_cover = config.get("tailor", {}).get("generate_cover_letter", True)
         self._preferred_categories = config.get("profile", {}).get(
             "categories", DEFAULT_PREFERRED_CATEGORIES
         )
         self._preferred_locations = config.get("filters", {}).get("locations", ["Remote"])
+        self._profile = self._load_profile()
         os.makedirs(LOGS_RESUMES_DIR, exist_ok=True)
+
+    def _load_profile(self) -> dict:
+        import yaml
+        try:
+            with open("profile.yaml") as f:
+                return yaml.safe_load(f)
+        except Exception:
+            return {}
 
     async def start(self):
         self.log.brain("TailorAgent started — watching queue")
@@ -107,6 +117,27 @@ class TailorAgent:
             f.write(tailored)
         self.log.saved(filepath)
 
+        cover_letter = ""
+        cl_llm = ""
+        if self._gen_cover:
+            self.log.llm_call("Generating cover letter...")
+            cover_letter, cl_llm = await generate_cover_letter(
+                self._profile,
+                event.title,
+                event.company,
+                keywords,
+                self.cfg,
+            )
+            self.log.cover_letter(len(cover_letter.split()))
+
+        screening_answers: dict = {}
+        autonomy = self.cfg.get("autonomy", {})
+        if autonomy.get("mode") == "full":
+            self.log.detail("Autonomous mode — pre-generating screening answers")
+            static_answers = self._profile.get("screening_answers", {})
+            for question, answer in static_answers.items():
+                screening_answers[question] = answer
+
         result = TailoredResult(
             job_id=event.job_id,
             platform=event.platform,
@@ -118,6 +149,9 @@ class TailorAgent:
             keywords_injected=keywords,
             match_score=score,
             llm_used=llm_used,
+            cover_letter=cover_letter,
+            screening_answers=screening_answers,
+            generated_summary="",
         )
         await self.output_queue.enqueue(result)
         self.log.queued_tailor()

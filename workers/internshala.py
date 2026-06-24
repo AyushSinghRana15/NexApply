@@ -6,7 +6,7 @@ from workers.base import BaseWorker
 
 class InternshalaWorker(BaseWorker):
 
-    async def apply(self, result: TailoredResult) -> Optional[ApplicationPayload]:
+    async def apply(self, result: TailoredResult, auto_submit: bool = False) -> Optional[ApplicationPayload]:
         await self.launch()
         try:
             await self.load_cookies("internshala")
@@ -43,10 +43,7 @@ class InternshalaWorker(BaseWorker):
                 status=ApplicationPayload.STATUS_NEEDS_COOKIES,
             )
 
-        keywords = ", ".join(result.keywords_injected)
-        cover = self.profile["cover_letter_template"].format(
-            title=result.title, company=result.company, keywords=keywords
-        )
+        cover = result.cover_letter or self.profile.get("cover_letter_template", "")
 
         fields = {
             "cover_letter": cover,
@@ -54,17 +51,56 @@ class InternshalaWorker(BaseWorker):
         }
 
         form_data = {}
+        filled_fields = set()
         for field_name, value in fields.items():
             self.log.filling(field_name, value)
             ok = await self.smart_fill(field_name, value, "internshala")
             if ok:
                 form_data[field_name] = value
+                filled_fields.add(field_name)
 
-        await self.upload_resume(result.tailored_resume, "internshala")
-        form_data["resume_uploaded"] = "yes"
+        generated = result.to_dict()
+        universal_data = await self.universal_fill(self.page, generated, filled_fields)
+        form_data.update(universal_data)
+
+        dh = await self.document_handler()
+        await dh.smart_attach(self.page, result.tailored_resume)
 
         screenshot = await self.take_screenshot(result.job_id, result.company)
         self.log.screenshot_saved(screenshot)
+
+        if auto_submit:
+            submitted = await self.submit("internshala")
+            await self.close()
+            if submitted:
+                self.log.autonomous_submitted(result.title, result.company, "internshala")
+                return ApplicationPayload(
+                    job_id=result.job_id,
+                    platform=result.platform,
+                    title=result.title,
+                    company=result.company,
+                    apply_url=result.apply_url,
+                    match_score=result.match_score,
+                    keywords_injected=result.keywords_injected,
+                    resume_variant=result.resume_variant,
+                    screenshot_path=screenshot,
+                    form_data_used=form_data,
+                    status=ApplicationPayload.STATUS_APPLIED,
+                )
+            else:
+                return ApplicationPayload(
+                    job_id=result.job_id,
+                    platform=result.platform,
+                    title=result.title,
+                    company=result.company,
+                    apply_url=result.apply_url,
+                    match_score=result.match_score,
+                    keywords_injected=result.keywords_injected,
+                    resume_variant=result.resume_variant,
+                    screenshot_path=screenshot,
+                    form_data_used=form_data,
+                    status=ApplicationPayload.STATUS_SUBMIT_FAILED,
+                )
 
         payload = ApplicationPayload(
             job_id=result.job_id,
@@ -79,6 +115,9 @@ class InternshalaWorker(BaseWorker):
             form_data_used=form_data,
             status=ApplicationPayload.STATUS_PENDING_REVIEW,
             page=self.page,
+            cover_letter=cover,
+            screening_answers=result.screening_answers,
+            generated_summary=result.generated_summary,
         )
 
         self.log.paused("PAUSED — waiting for GuardAgent approval")
