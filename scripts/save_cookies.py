@@ -5,14 +5,12 @@ import sys
 from playwright.async_api import async_playwright
 
 LOGIN_URLS = {
-    "linkedin":    "https://www.linkedin.com/login",
     "indeed":      "https://secure.indeed.com/auth",
     "naukri":      "https://www.naukri.com/nlogin/login",
     "internshala": "https://internshala.com/login",
 }
 
 SUCCESS_URLS = {
-    "linkedin":    lambda url: "linkedin.com/feed" in url,
     "indeed":      lambda url: "indeed.com" in url and "auth" not in url,
     "naukri":      lambda url: "naukri.com" in url and "login" not in url,
     "internshala": lambda url: "internshala.com" in url and "login" not in url,

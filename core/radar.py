@@ -117,9 +117,8 @@ class RadarAgent:
         platforms = self.cfg.get("platforms", {})
         tasks = []
         delay = 5
-        order = ["linkedin", "indeed", "naukri", "internshala"]
+        order = ["indeed", "naukri", "internshala"]
         watchers = {
-            "linkedin": self._watch_linkedin,
             "indeed": self._watch_indeed,
             "naukri": self._watch_naukri,
             "internshala": self._watch_internshala,
@@ -138,26 +137,6 @@ class RadarAgent:
         tasks.append(asyncio.create_task(self._heartbeat()))
 
         await asyncio.gather(*tasks, return_exceptions=True)
-
-    async def _watch_linkedin(self):
-        self.log.feed("LinkedIn feed connected — polling every 30s")
-        while True:
-            try:
-                url = "https://www.linkedin.com/jobs/search/?keywords=software+engineer&location=India&f_TPR=r3600&format=rss"
-                feed = feedparser.parse(url)
-                if not feed.entries:
-                    self.log.warn("LinkedIn feed returned no entries — may require auth")
-                for entry in feed.entries:
-                    title = entry.get("title", "Unknown Title")
-                    company = entry.get("company", "Unknown Company")
-                    location = entry.get("location", "Remote")
-                    desc = entry.get("summary", "")
-                    link = entry.get("link", "")
-                    posted = entry.get("published", "")
-                    await self._emit_job("linkedin", title, company, location, desc, link, posted)
-            except Exception as e:
-                self.log.error(f"LinkedIn watcher error: {e}")
-            await asyncio.sleep(self._interval)
 
     async def _watch_indeed(self):
         self.log.feed("Indeed feed connected — polling every 30s")

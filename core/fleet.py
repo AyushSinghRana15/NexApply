@@ -29,7 +29,7 @@ class ApplyFleet:
     async def start(self):
         self.log.fleet_start("ApplyFleet started — 4 workers ready")
 
-        platforms = ["linkedin", "indeed", "naukri", "internshala"]
+        platforms = ["indeed", "naukri", "internshala"]
         for p in platforms:
             cookie_path = f"cookies/{p}_cookies.json"
             if os.path.exists(cookie_path):
@@ -58,13 +58,11 @@ class ApplyFleet:
             self.log.applying(f"{result.title} @ {result.company}", platform)
 
             worker_map = {
-                "linkedin": "LinkedInWorker",
                 "indeed": "IndeedWorker",
                 "naukri": "NaukriWorker",
                 "internshala": "InternshalaWorker",
             }
             mod_map = {
-                "linkedin": "workers.linkedin",
                 "indeed": "workers.indeed",
                 "naukri": "workers.naukri",
                 "internshala": "workers.internshala",

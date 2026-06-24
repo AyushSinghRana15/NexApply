@@ -31,7 +31,7 @@ The system is composed of **5 specialized agents**, each with a single responsib
 **Role:** Real-time job discovery across all platforms.
 
 **What it does:**
-- Polls RSS feeds (Indeed, LinkedIn) every 30 seconds
+- Polls RSS feeds (Indeed) every 30 seconds
 - Runs scraping loops for platforms without RSS (Naukri, Internshala)
 - Deduplicates jobs using Redis SET to avoid reprocessing
 - Emits a structured `JobEvent` to the queue for every new posting
@@ -46,7 +46,7 @@ The system is composed of **5 specialized agents**, each with a single responsib
 ```json
 {
   "job_id": "uuid",
-  "platform": "linkedin | indeed | naukri | internshala",
+  "platform": "indeed | naukri | internshala",
   "title": "Software Engineer",
   "company": "Razorpay",
   "location": "Remote / Bangalore",
@@ -85,7 +85,7 @@ filters:
   titles: ["Software Engineer", "Backend Developer", "SDE"]
   exclude_keywords: ["10+ years", "C++ only"]
   locations: ["Remote", "Delhi", "Bangalore"]
-  platforms: ["linkedin", "indeed", "naukri", "internshala"]
+  platforms: ["indeed", "naukri", "internshala"]
 ```
 
 **Constraints:**
@@ -152,7 +152,7 @@ At runtime (per job):
 **Role:** Parallel browser automation across job platforms.
 
 **What it does:**
-- Spins up one Playwright worker per platform (LinkedIn, Indeed, Naukri, Internshala)
+- Spins up one Playwright worker per platform (Indeed, Naukri, Internshala)
 - Each worker is a separate async coroutine with its own browser context
 - Fills application forms using pre-stored answers from `profile.yaml`
 - Handles platform-specific DOM structures via dedicated adapters
@@ -166,7 +166,6 @@ At runtime (per job):
 **Platform adapter map:**
 ```
 workers/
-├── linkedin.py     # Easy Apply flow
 ├── indeed.py       # Indeed Apply flow
 ├── naukri.py       # Naukri apply modal
 └── internshala.py  # Internshala application form
@@ -202,7 +201,7 @@ workers/
 ```json
 {
   "job_id": "uuid",
-  "platform": "linkedin",
+  "platform": "indeed",
   "title": "Senior SDE @ Razorpay",
   "posted_at": "2 min ago",
   "match_score": 87,

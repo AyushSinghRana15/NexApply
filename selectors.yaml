@@ -27,28 +27,6 @@ indeed:
     - textarea[placeholder*="cover"]
     - textarea[id*="cover"]
 
-linkedin:
-  easy_apply_button:
-    - button[aria-label="Easy Apply"]
-    - button:has-text("Easy Apply")
-    - button[data-control-name="easy_apply"]
-  next_button:
-    - button[aria-label="Next"]
-    - button:has-text("Next")
-    - button[aria-label="Continue"]
-  review_button:
-    - button[aria-label="Review"]
-    - button:has-text("Review")
-  submit_button:
-    - button[aria-label="Submit application"]
-    - button:has-text("Submit")
-  phone:
-    - input[name="phone"]
-    - input[id*="phone"]
-    - input[placeholder*="Phone"]
-  resume_upload:
-    - input[type="file"]
-
 naukri:
   apply_button:
     - button:has-text("Apply")

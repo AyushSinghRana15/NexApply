@@ -36,7 +36,6 @@ export function matchScoreBarColor(score: number): string {
 
 export function platformIcon(platform: string): string {
   const map: Record<string, string> = {
-    linkedin: "Linkedin",
     indeed: "Globe",
     naukri: "Briefcase",
     internshala: "GraduationCap",

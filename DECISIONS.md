@@ -75,3 +75,11 @@ This file tracks key architectural decisions, changes, and context throughout th
 - Installed Playwright + Chromium for Naukri/Internshala scrapers.
 - Created `requirements.txt`, updated `README.md` with setup instructions.
 - Added `.venv/` to `.gitignore`.
+
+### 2026-06-24 — LinkedIn platform removed
+
+- LinkedIn removed as a supported job platform after user request.
+- Removed `_watch_linkedin` from `core/radar.py`, `LinkedInWorker` from `workers/linkedin.py`, and all LinkedIn selectors from `selectors.yaml`.
+- Removed LinkedIn from `config.yaml` platform list, `core/fleet.py` routing maps, `scripts/save_cookies.py`, and `frontend/src/lib/utils.ts`.
+- Updated references in `README.md`, `AGENTS.md` to reflect 3 platforms (Indeed, Naukri, Internshala).
+- Rationale: user no longer wants LinkedIn to be included in the pipeline.

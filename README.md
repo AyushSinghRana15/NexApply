@@ -27,7 +27,6 @@ brew install redis && brew services start redis
 
 # Save cookies for each platform (required for ApplyFleet)
 python3 scripts/save_cookies.py indeed
-python3 scripts/save_cookies.py linkedin
 python3 scripts/save_cookies.py naukri
 python3 scripts/save_cookies.py internshala
 
@@ -47,8 +46,7 @@ Requires real-time monitoring + parallel execution + pre-cached tailoring.
 │  RadarAgent  │   TailorAgent    │   ApplyFleet      │  GuardAgent │
 │  (Phase 1)   │  (Phase 2)       │  (Phase 3)        │  (Phase 4)  │
 ├──────────────┼──────────────────┼──────────────────┼─────────────┤
-│ LinkedIn RSS │ Classifier (5ms) │ Worker: LinkedIn  │ Review card │
-│ Indeed RSS   │ → keyword match  │ Worker: Indeed    │ CLI approve │
+│ Indeed RSS   │ Classifier (5ms) │ Worker: Indeed    │ Review card │
 │ Naukri scraper│ Groq API (8s)   │ Worker: Naukri    │ / skip /    │
 │ Internshala  │ → Ollama fallback│ Worker: Internshala│ auto-skip   │
 │ Dedup (Redis)│ Scorer (0-100)   │ Form fill + pause │ after 5min  │
@@ -182,7 +180,6 @@ ApplyFleet consumes TailoredResults and produces ApplicationPayloads using Playw
 | Worker | Fields | Challenges |
 |--------|--------|------------|
 | **Indeed** | first_name, last_name, email, phone, resume, cover_letter | Sometimes redirects to external ATS (Workday, Greenhouse) |
-| **LinkedIn** | phone, resume, multi-step wizard (Easy Apply) | Multi-page modal, next button varies per step |
 | **Naukri** | cover_letter, notice_period, current_ctc, expected_ctc | Login required, CTC fields are Naukri-specific |
 | **Internshala** | cover_letter, availability | Easiest — simple form, login required |
 
@@ -192,7 +189,6 @@ Cookies are saved once with `scripts/save_cookies.py`, then reused on every run:
 
 ```bash
 python3 scripts/save_cookies.py indeed    # Opens browser → you log in → cookies saved
-python3 scripts/save_cookies.py linkedin
 python3 scripts/save_cookies.py naukri
 python3 scripts/save_cookies.py internshala
 ```
@@ -255,7 +251,6 @@ score = (keywords_found_in_base / 5) × 60   # 60% keyword match
 ## Job Detection
 | Platform    | Method          | Latency |
 |-------------|-----------------|---------|
-| LinkedIn    | RSS feed/scrape | ~1 min  |
 | Indeed      | RSS feed        | ~30s    |
 | Naukri      | Scraping        | ~2 min  |
 | Internshala | Scraping        | ~1-2 min|
@@ -276,7 +271,6 @@ score = (keywords_found_in_base / 5) × 60   # 60% keyword match
 ├── workers/
 │   ├── base.py          # BaseWorker — smart_fill, screenshot, cookie loader
 │   ├── indeed.py        # Indeed Apply worker
-│   ├── linkedin.py      # LinkedIn Easy Apply worker
 │   ├── naukri.py        # Naukri modal apply worker
 │   └── internshala.py   # Internshala form worker
 ├── scripts/
@@ -307,7 +301,6 @@ score = (keywords_found_in_base / 5) × 60   # 60% keyword match
 
 ```yaml
 platforms:
-  linkedin: true
   indeed: true
   naukri: true
   internshala: true

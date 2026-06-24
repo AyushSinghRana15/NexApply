@@ -56,25 +56,8 @@ async def start_agents(config: dict, log: Logger):
             status=ApplicationPayload.STATUS_PENDING_REVIEW,
             approval_event=asyncio.Event(),
         )
-        test_path2 = os.path.join(screenshots_dir, "test-002_swiggy.png")
-        if not os.path.exists(test_path2):
-            from PIL import Image
-            Image.new("RGB", (800, 600), color=(15, 23, 42)).save(test_path2)
-        fake2 = ApplicationPayload(
-            job_id="test-002",
-            platform="linkedin",
-            title="SDE-2",
-            company="Swiggy",
-            match_score=62,
-            keywords_injected=["Django", "PostgreSQL", "AWS"],
-            resume_variant="engineering_v1",
-            screenshot_path=test_path2,
-            status=ApplicationPayload.STATUS_PENDING_REVIEW,
-            approval_event=asyncio.Event(),
-        )
         await asyncio.sleep(2)
         await guard_queue.enqueue(fake)
-        await guard_queue.enqueue(fake2)
         log.detail("Test payloads injected into guard_queue")
 
 

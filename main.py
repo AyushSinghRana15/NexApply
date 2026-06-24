@@ -24,7 +24,7 @@ async def main():
     except FileNotFoundError:
         log.error("config.yaml not found — using defaults")
         config = {
-            "platforms": {"linkedin": True, "indeed": True, "naukri": True, "internshala": True},
+            "platforms": {"indeed": True, "naukri": True, "internshala": True},
             "polling_interval_seconds": 30,
             "filters": {},
             "tailor": {"min_match_score": 60},
@@ -79,24 +79,7 @@ async def main():
         await guard_queue.enqueue(fake)
         log.detail("Test payload injected into guard_queue")
 
-        fake2 = ApplicationPayload(
-            job_id="test-002",
-            platform="linkedin",
-            title="SDE-2",
-            company="Swiggy",
-            apply_url="https://linkedin.com/jobs/view/test002",
-            match_score=62,
-            keywords_injected=["Django", "PostgreSQL", "AWS"],
-            resume_variant="engineering_v1",
-            screenshot_path=os.path.join(screenshots_dir, "test-002_swiggy.png"),
-            status=ApplicationPayload.STATUS_PENDING_REVIEW,
-            approval_event=asyncio.Event(),
-        )
-        if not os.path.exists("logs/screenshots/test-002_swiggy.png"):
-            img2 = Image.new("RGB", (800, 600), color=(15, 23, 42))
-            img2.save("logs/screenshots/test-002_swiggy.png")
-        await guard_queue.enqueue(fake2)
-        log.detail("Test payload 2 injected into guard_queue")
+
 
     await asyncio.gather(radar_task, tailor_task, fleet_task, guard_task)
 
