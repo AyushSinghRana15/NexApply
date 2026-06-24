@@ -13,3 +13,5 @@ sqlalchemy
 alembic
 pydantic-settings
 websockets
+apscheduler
+slowapi

@@ -23,6 +23,9 @@ class Application(Base):
     decision: Mapped[str] = mapped_column(String(32), default="")
     decided_at: Mapped[str] = mapped_column(String(64), default="")
     time_to_decide_seconds: Mapped[int] = mapped_column(Integer, default=0)
+    email_status: Mapped[str] = mapped_column(String(32), default="")
+    email_received_at: Mapped[str] = mapped_column(String(64), default="")
+    email_subject: Mapped[str] = mapped_column(String(512), default="")
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )

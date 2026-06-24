@@ -8,6 +8,7 @@ from api.schemas.stats import (
     TimelineResponse,
 )
 from api.services.stats import stats_service
+from api.services.gmail_tracker import GmailTracker
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
 
@@ -27,3 +28,9 @@ def get_timeline(db: Session = Depends(get_db)):
 def get_platforms(db: Session = Depends(get_db)):
     platforms = stats_service.platforms(db)
     return PlatformBreakdownResponse(platforms=platforms)
+
+
+@router.get("/email-tracking")
+def get_email_tracking(db: Session = Depends(get_db)):
+    tracker = GmailTracker()
+    return tracker.get_email_tracking_stats(db)

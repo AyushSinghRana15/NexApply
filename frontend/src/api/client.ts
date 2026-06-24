@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Application, Job, PlatformBreakdown, ResumeVariant, StatsSummary, TimelinePoint } from "@/types";
+import type { Application, EmailTrackingStats, Job, PlatformBreakdown, ResumeVariant, StatsSummary, TimelinePoint, ActivityLogEntry } from "@/types";
 
 const api = axios.create({
   baseURL: "/api",
@@ -16,6 +16,9 @@ export async function fetchApplications(params?: {
   per_page?: number;
   platform?: string;
   status?: string;
+  search?: string;
+  min_score?: number;
+  date_range?: string;
 }): Promise<{ items: Application[]; total: number }> {
   const { data } = await api.get("/applications", { params });
   return data;
@@ -28,6 +31,11 @@ export async function fetchApplication(id: number): Promise<Application> {
 
 export async function submitDecision(id: number, action: string): Promise<Application> {
   const { data } = await api.patch(`/applications/${id}/decision`, { action });
+  return data;
+}
+
+export async function fetchEmailHistory(id: number): Promise<{ items: unknown[] }> {
+  const { data } = await api.get(`/applications/${id}/email-history`);
   return data;
 }
 
@@ -46,8 +54,32 @@ export async function fetchStatsPlatforms(): Promise<{ platforms: PlatformBreakd
   return data;
 }
 
+export async function fetchEmailTrackingStats(): Promise<EmailTrackingStats> {
+  const { data } = await api.get("/stats/email-tracking");
+  return data;
+}
+
 export async function fetchResumes(): Promise<{ items: ResumeVariant[] }> {
   const { data } = await api.get("/resumes");
+  return data;
+}
+
+export async function createResume(body: { name: string; category: string; content: string }): Promise<ResumeVariant> {
+  const { data } = await api.post("/resumes", body);
+  return data;
+}
+
+export async function updateResume(id: number, body: Partial<ResumeVariant>): Promise<ResumeVariant> {
+  const { data } = await api.patch(`/resumes/${id}`, body);
+  return data;
+}
+
+export async function deleteResume(id: number): Promise<void> {
+  await api.delete(`/resumes/${id}`);
+}
+
+export async function previewResume(body: { variant_id: number; sample_keywords: string[] }): Promise<{ injected: string }> {
+  const { data } = await api.post("/resumes/preview", body);
   return data;
 }
 
@@ -59,6 +91,20 @@ export async function fetchConfig(): Promise<Record<string, unknown>> {
 export async function updateConfig(cfg: Record<string, unknown>): Promise<Record<string, unknown>> {
   const { data } = await api.patch("/config", cfg);
   return data;
+}
+
+export async function fetchActivityLog(): Promise<{ items: ActivityLogEntry[] }> {
+  const { data } = await api.get("/logs/activity");
+  return data;
+}
+
+export async function fetchHealth(): Promise<Record<string, unknown>> {
+  const { data } = await api.get("/health");
+  return data;
+}
+
+export async function clearApplications(): Promise<void> {
+  await api.delete("/applications");
 }
 
 export default api;

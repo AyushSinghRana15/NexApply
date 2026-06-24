@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 
 class DecisionRequest(BaseModel):
-    action: str  # APPROVE | SKIP | EDIT
+    action: str
 
 
 class ApplicationResponse(BaseModel):
@@ -14,6 +14,7 @@ class ApplicationResponse(BaseModel):
     platform: str
     title: str
     company: str
+    location: str = ""
     match_score: int
     resume_variant: str
     keywords_injected: list[str]
@@ -23,6 +24,9 @@ class ApplicationResponse(BaseModel):
     decision: str
     decided_at: str
     time_to_decide_seconds: int
+    email_status: str = ""
+    email_received_at: str = ""
+    email_subject: str = ""
     created_at: datetime
 
     model_config = {"from_attributes": True}

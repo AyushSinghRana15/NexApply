@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -19,6 +21,17 @@ def create_resume(body: dict, db: Session = Depends(get_db)):
     db.add(r)
     db.commit()
     return r
+
+
+@router.post("/preview")
+def preview_resume(body: dict, db: Session = Depends(get_db)):
+    variant_id = body.get("variant_id")
+    sample_keywords = body.get("sample_keywords", [])
+    r = db.query(ResumeVariant).filter(ResumeVariant.id == variant_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    injected = r.content.replace("{{KEYWORDS}}", ", ".join(sample_keywords))
+    return {"injected": injected}
 
 
 @router.patch("/{resume_id}")

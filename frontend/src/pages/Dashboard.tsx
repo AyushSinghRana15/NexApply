@@ -1,80 +1,223 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useStatsSummary, useStatsTimeline, useStatsPlatforms, useApplications } from "@/hooks/useQueries";
+import { useQuery } from "@tanstack/react-query";
+import { useStatsSummary, useApplications, useConfig } from "@/hooks/useQueries";
 import { useWSStore } from "@/stores/useWSStore";
 import { StatCard, Badge } from "@/components/ui";
-import { Send, Clock, AlertTriangle, BarChart3 } from "lucide-react";
-import { formatTimeAgo } from "@/lib/utils";
+import { CardSkeleton, TableSkeleton } from "@/components/common";
+import {
+  Send, Clock, BarChart3, Mail,
+  Search, Brain, Globe, Shield,
+  CheckCircle, XCircle, AlertCircle,
+  Activity, Check, Minus
+} from "lucide-react";
+import { formatTimeAgo, cn } from "@/lib/utils";
+import { fetchEmailTrackingStats } from "@/api/client";
+
+const agentMeta: Record<string, { name: string; role: string; icon: typeof Search }> = {
+  radar: { name: "RadarAgent", role: "Job Discovery", icon: Search },
+  tailor: { name: "TailorAgent", role: "Resume Tailoring", icon: Brain },
+  fleet: { name: "ApplyFleet", role: "Browser Automation", icon: Globe },
+  guard: { name: "GuardAgent", role: "Review Gate", icon: Shield },
+};
+
+const eventIconMap: Record<string, typeof Search> = {
+  JOB_DETECTED: Search,
+  JOB_TAILORED: Brain,
+  JOB_FILLED: Globe,
+  APPLICATION_SUBMITTED: CheckCircle,
+  APPLICATION_SKIPPED: XCircle,
+  REVIEW_TIMEOUT: Clock,
+  EMAIL_UPDATE: Mail,
+  AGENT_STATUS: Activity,
+  RESUME_SUGGESTION: AlertCircle,
+};
+
+function EventIcon({ type, className }: { type: string; className?: string }) {
+  const Icon = eventIconMap[type] ?? Activity;
+  return <Icon size={16} className={className} />;
+}
+
+function AgentCard({ agent }: { agent: string }) {
+  const info = useWSStore((s) => s.agents[agent]);
+  const meta = agentMeta[agent];
+
+  if (!meta) return null;
+
+  const statusColor = info?.status === "online"
+    ? "bg-green-500"
+    : info?.status === "error"
+      ? "bg-yellow-500"
+      : "bg-red-500";
+
+  const label = info?.status === "online" ? "Online"
+    : info?.status === "error" ? "Error"
+      : "Offline";
+
+  return (
+    <div className="bg-surface rounded-xl border border-border p-4 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-dark-700 text-accent">
+            <meta.icon size={16} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">{meta.name}</p>
+            <p className="text-xs text-dark-500">{meta.role}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className={cn("w-2 h-2 rounded-full", statusColor, info?.status === "online" && "animate-pulse")} />
+          <span className={cn(
+            "text-xs font-medium",
+            info?.status === "online" ? "text-green-400"
+              : info?.status === "error" ? "text-yellow-400"
+                : "text-red-400"
+          )}>
+            {label}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center justify-between text-xs text-dark-400">
+        <span>{info?.jobs_today ?? 0} jobs today</span>
+        <span>{info?.last_active ? formatTimeAgo(info.last_active) : "—"}</span>
+      </div>
+    </div>
+  );
+}
 
 export function Dashboard() {
-  const { data: stats } = useStatsSummary();
-  const { data: timeline } = useStatsTimeline();
-  const { data: platforms } = useStatsPlatforms();
-  const { data: recentApps } = useApplications({ page: 1, status: undefined });
-  const pendingCount = useWSStore((s) => s.pendingReviews.length);
+  const { data: stats, isLoading: statsLoading } = useStatsSummary();
+  const { data: emailStats } = useQuery({
+    queryKey: ["email-stats"],
+    queryFn: fetchEmailTrackingStats,
+    refetchInterval: 30_000,
+  });
+  const { data: recentApps, isLoading: appsLoading } = useApplications({ page: 1 });
+  const { data: config } = useConfig();
+  const { pendingReviews, activityFeed, isConnected } = useWSStore();
 
-  const latestDays = useMemo(() => {
-    if (!timeline?.days) return [];
-    return [...timeline.days].reverse().slice(0, 7).reverse();
-  }, [timeline]);
+  const configPlatforms = useMemo(() => {
+    if (!config?.platforms) return null;
+    return config.platforms as Record<string, { enabled?: boolean; cookie_valid?: boolean }>;
+  }, [config]);
 
-  const maxCount = useMemo(
-    () => Math.max(...latestDays.map((d) => d.applied + d.skipped), 1),
-    [latestDays]
-  );
+  const displayPlatforms = ["indeed", "naukri", "internshala"];
+
+  const responseRate = emailStats?.response_rate ?? 0;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-dark-400 text-sm mt-1">NexApply agent pipeline overview</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-dark-400 text-sm mt-1">NexApply agent pipeline overview</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500 animate-pulse" : "bg-red-500")} />
+          <span className="text-xs text-dark-400">{isConnected ? "Live" : "Disconnected"}</span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Applied" value={stats?.total_applied ?? 0} icon={<Send size={20} />} />
-        <StatCard label="Pending Review" value={pendingCount + (stats?.total_pending ?? 0)} icon={<Clock size={20} />} />
-        <StatCard label="Skipped" value={stats?.total_skipped ?? 0} icon={<AlertTriangle size={20} />} />
-        <StatCard label="Avg Score" value={stats ? `${stats.avg_match_score}%` : "-"} icon={<BarChart3 size={20} />} />
+        {statsLoading ? (
+          <>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <CardSkeleton key={i} />
+            ))}
+          </>
+        ) : (
+          <>
+            <StatCard
+              label="Applied"
+              value={stats?.total_applied ?? 0}
+              icon={<Send size={20} />}
+            />
+            <StatCard
+              label="Pending Review"
+              value={(stats?.total_pending ?? 0) + pendingReviews.length}
+              icon={<Clock size={20} />}
+            />
+            <StatCard
+              label="Avg Score"
+              value={stats ? `${stats.avg_match_score}%` : "—"}
+              icon={<BarChart3 size={20} />}
+            />
+            <StatCard
+              label="Response Rate"
+              value={emailStats ? `${responseRate}%` : "—"}
+              icon={<Mail size={20} />}
+            />
+          </>
+        )}
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider mb-3">Agent Status</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Object.keys(agentMeta).map((key) => (
+            <AgentCard key={key} agent={key} />
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider mb-4">Last 7 Days</h2>
-          <div className="flex items-end gap-2 h-32">
-            {latestDays.map((day) => {
-              const total = day.applied + day.skipped;
-              const height = total > 0 ? (total / maxCount) * 100 : 4;
-              return (
-                <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full flex flex-col-reverse" style={{ height: `${Math.max(height, 4)}%` }}>
-                    <div
-                      className="w-full bg-green-500/80 rounded-t"
-                      style={{ height: `${(day.applied / Math.max(total, 1)) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-dark-500">
-                    {new Date(day.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                  </span>
+          <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider mb-3">Activity Feed</h2>
+          <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1">
+            {activityFeed.length === 0 && (
+              <p className="text-dark-500 text-sm text-center py-8">Waiting for activity...</p>
+            )}
+            {activityFeed.slice(0, 100).map((event) => (
+              <div
+                key={event.id}
+                className="flex items-start gap-3 py-2 px-2 rounded-lg hover:bg-surface-hover transition-colors"
+              >
+                <div className="p-1.5 rounded-md bg-dark-700 mt-0.5 shrink-0">
+                  <EventIcon type={event.type} className="text-dark-400" />
                 </div>
-              );
-            })}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-dark-300 truncate">{event.message}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {event.platform && (
+                      <span className="text-[10px] text-dark-500 uppercase">{event.platform}</span>
+                    )}
+                    <span className="text-[10px] text-dark-500">{formatTimeAgo(event.timestamp)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider mb-4">By Platform</h2>
+          <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider mb-3">Platform Health</h2>
           <div className="space-y-3">
-            {platforms?.platforms.map((p) => (
-              <div key={p.platform} className="flex items-center justify-between">
-                <span className="text-sm capitalize">{p.platform}</span>
-                <div className="flex items-center gap-3 text-xs text-dark-400">
-                  <span className="text-green-400">{p.applied} applied</span>
-                  <span>{p.skipped} skipped</span>
+            {displayPlatforms.map((platform) => {
+              const pCfg = configPlatforms?.[platform];
+              const connected = pCfg?.cookie_valid ?? pCfg?.enabled ?? false;
+              return (
+                <div
+                  key={platform}
+                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-dark-800"
+                >
+                  <span className="text-sm font-medium capitalize">{platform}</span>
+                  {connected ? (
+                    <div className="flex items-center gap-1.5 text-green-400">
+                      <Check size={14} />
+                      <span className="text-xs">Connected</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-dark-500">
+                      <Minus size={14} />
+                      <span className="text-xs">Disabled</span>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
-            {(!platforms?.platforms || platforms.platforms.length === 0) && (
-              <p className="text-dark-500 text-sm">No data yet</p>
+              );
+            })}
+            {(!config && !configPlatforms) && (
+              <p className="text-dark-500 text-sm text-center py-4">Loading platform status...</p>
             )}
           </div>
         </div>
@@ -85,25 +228,42 @@ export function Dashboard() {
           <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider">Recent Applications</h2>
           <Link to="/applications" className="text-xs text-accent hover:underline">View all</Link>
         </div>
-        <div className="space-y-3">
-          {recentApps?.items.slice(0, 5).map((app) => (
-            <div key={app.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-              <div>
-                <p className="text-sm font-medium">{app.title}</p>
-                <p className="text-xs text-dark-400">{app.company} &middot; {app.platform}</p>
+        {appsLoading ? (
+          <TableSkeleton rows={5} />
+        ) : (
+          <div className="space-y-1">
+            {recentApps?.items.slice(0, 5).map((app) => (
+              <div
+                key={app.id}
+                className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-surface-hover transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{app.title}</p>
+                  <p className="text-xs text-dark-400">{app.company}</p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0 ml-4">
+                  <Badge
+                    variant={
+                      app.status === "APPLIED"
+                        ? "success"
+                        : app.status === "PENDING_REVIEW"
+                          ? "warning"
+                          : "danger"
+                    }
+                  >
+                    {app.status.replace("_", " ")}
+                  </Badge>
+                  <span className="text-xs text-dark-500 w-14 text-right">
+                    {formatTimeAgo(app.created_at)}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-dark-500">{formatTimeAgo(app.created_at)}</span>
-                <Badge variant={app.status === "APPLIED" ? "success" : app.status === "PENDING_REVIEW" ? "warning" : "danger"}>
-                  {app.status.replace("_", " ")}
-                </Badge>
-              </div>
-            </div>
-          ))}
-          {(!recentApps?.items || recentApps.items.length === 0) && (
-            <p className="text-dark-500 text-sm text-center py-4">No applications yet</p>
-          )}
-        </div>
+            ))}
+            {(!recentApps?.items || recentApps.items.length === 0) && (
+              <p className="text-dark-500 text-sm text-center py-6">No applications yet</p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
