@@ -143,8 +143,9 @@ class AutonomousAgent:
         start_h, start_m = map(int, start_str.split(":"))
         end_h, end_m = map(int, end_str.split(":"))
 
-        start = time(hour=start_h, minute=start_m)
-        end = time(hour=end_h, minute=end_m)
+        from datetime import time as dt_time
+        start = dt_time(hour=start_h, minute=start_m)
+        end = dt_time(hour=end_h, minute=end_m)
 
         if start <= now <= end:
             return True, None
@@ -163,6 +164,3 @@ class AutonomousAgent:
 
     def get_platform_limits(self) -> Dict[str, int]:
         return self.autonomy.get("max_per_platform", {"indeed": 100, "naukri": 100, "internshala": 100})
-
-
-from datetime import time

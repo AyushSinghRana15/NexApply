@@ -1,8 +1,9 @@
 import asyncio
 import os
 import sys
-import time
-from datetime import datetime, time
+import time as time_mod
+from datetime import datetime
+from datetime import time as dt_time
 
 import yaml
 
@@ -41,8 +42,8 @@ async def watchdog(config: dict, log: Logger):
         start_h, start_m = map(int, start_str.split(":"))
         end_h, end_m = map(int, end_str.split(":"))
 
-        start_t = time(hour=start_h, minute=start_m)
-        end_t = time(hour=end_h, minute=end_m)
+        start_t = dt_time(hour=start_h, minute=start_m)
+        end_t = dt_time(hour=end_h, minute=end_m)
 
         if not (start_t <= now.time() <= end_t):
             log.watchdog_sleep(f"Outside apply hours ({start_str}-{end_str}) — sleeping")
@@ -64,7 +65,7 @@ def _count_recent_failures(window_minutes: int = 10) -> int:
     except (FileNotFoundError, OSError):
         return 0
 
-    cutoff = time.time() - (window_minutes * 60)
+    cutoff = time_mod.time() - (window_minutes * 60)
     count = 0
     import json
     for line in lines:
