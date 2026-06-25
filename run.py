@@ -16,6 +16,7 @@ from core.logger import Logger
 from core.queue import JobQueue
 from core.radar import RadarAgent
 from core.tailor import TailorAgent
+from core.resume_parser import parse_resume, merge_into_profile
 
 
 async def watchdog(config: dict, log: Logger):
@@ -239,6 +240,32 @@ async def main():
     except FileNotFoundError:
         log.error("config.yaml not found")
         config = {}
+
+    resume_arg = None
+    if "--resume" in sys.argv:
+        idx = sys.argv.index("--resume")
+        if idx + 1 < len(sys.argv) and not sys.argv[idx + 1].startswith("--"):
+            resume_arg = sys.argv[idx + 1]
+    if resume_arg:
+        log.detail(f"Parsing resume: {resume_arg}")
+        try:
+            parsed = parse_resume(resume_arg)
+            log.success(f"Resume parsed — found {len(parsed.get('skills', {}).get('primary', []))} skills, "
+                        f"{len(parsed.get('experience', []))} experiences, "
+                        f"{len(parsed.get('projects', []))} projects")
+            try:
+                with open("profile.yaml") as f:
+                    profile_data = yaml.safe_load(f) or {}
+                merged = merge_into_profile(parsed, profile_data)
+                with open("profile.yaml", "w") as f:
+                    yaml.dump(merged, f, default_flow_style=False, sort_keys=False)
+                log.success("Profile.yaml updated from parsed resume")
+            except Exception as e:
+                log.warn(f"Failed to update profile from resume: {e}")
+            config.setdefault("tailor", {})["use_user_resume"] = True
+            log.detail("Enabled use_user_resume in config")
+        except Exception as e:
+            log.error(f"Failed to parse resume: {e}")
 
     mode = config.get("autonomy", {}).get("mode", "full")
     profile_name = "Ayush Singh Rana"

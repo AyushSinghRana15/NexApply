@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Application, EmailTrackingStats, Job, PlatformBreakdown, ResumeVariant, StatsSummary, TimelinePoint, ActivityLogEntry } from "@/types";
+import type { Application, EmailTrackingStats, Job, ParsedResumeData, PlatformBreakdown, ResumeVariant, StatsSummary, TimelinePoint, ActivityLogEntry } from "@/types";
 
 const api = axios.create({
   baseURL: "/api",
@@ -64,8 +64,37 @@ export async function fetchResumes(): Promise<{ items: ResumeVariant[] }> {
   return data;
 }
 
-export async function createResume(body: { name: string; category: string; content: string }): Promise<ResumeVariant> {
+export async function createResume(body: { name: string; category: string; content: string; parsed_data?: unknown }): Promise<ResumeVariant> {
   const { data } = await api.post("/resumes", body);
+  return data;
+}
+
+export async function uploadResume(file: File, name?: string, category?: string): Promise<ResumeVariant> {
+  const form = new FormData();
+  form.append("file", file);
+  if (name) form.append("name", name);
+  if (category) form.append("category", category);
+  const { data } = await api.post("/resumes/upload", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function parseResumeFile(file: File): Promise<{ parsed_data: ParsedResumeData }> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await api.post("/resumes/parse", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function profileFromResume(file: File): Promise<{ message: string; parsed_data: ParsedResumeData }> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await api.post("/resumes/profile-from-resume", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return data;
 }
 

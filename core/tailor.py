@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 
 from core.classifier import classify_job
@@ -7,6 +8,7 @@ from core.logger import Logger
 from core.models import JobEvent, TailoredResult
 from core.queue import JobQueue
 from core.scorer import compute_score
+from core.resume_parser import build_resume_text, parse_resume
 
 VARIANT_MAP = {
     "engineering": "engineering_v1.txt",
@@ -38,6 +40,7 @@ class TailorAgent:
         )
         self._preferred_locations = config.get("filters", {}).get("locations", ["Remote"])
         self._profile = self._load_profile()
+        self._parsed_resume_data = self._load_parsed_resume()
         os.makedirs(LOGS_RESUMES_DIR, exist_ok=True)
 
     def _load_profile(self) -> dict:
@@ -47,6 +50,46 @@ class TailorAgent:
                 return yaml.safe_load(f)
         except Exception:
             return {}
+
+    def _load_parsed_resume(self) -> dict | None:
+        use_user = self.cfg.get("tailor", {}).get("use_user_resume", False)
+        if not use_user:
+            return None
+
+        db = None
+        try:
+            from api.db.database import SessionLocal
+            from api.models.resume import ResumeVariant
+            db = SessionLocal()
+            variant = (
+                db.query(ResumeVariant)
+                .filter(ResumeVariant.parsed_data.isnot(None), ResumeVariant.is_active == True)
+                .order_by(ResumeVariant.created_at.desc())
+                .first()
+            )
+            if variant and variant.parsed_data:
+                self.log.detail(f"Loaded parsed resume variant: {variant.name}")
+                return variant.parsed_data
+        except Exception:
+            pass
+        finally:
+            if db:
+                db.close()
+
+        pdf_paths = [
+            os.path.join(BASE_RESUMES_DIR, f)
+            for f in os.listdir(BASE_RESUMES_DIR)
+            if f.lower().endswith(".pdf")
+        ]
+        if pdf_paths:
+            path = pdf_paths[0]
+            self.log.detail(f"Parsing PDF resume: {path}")
+            try:
+                return parse_resume(path)
+            except Exception as e:
+                self.log.warn(f"Failed to parse resume PDF: {e}")
+
+        return None
 
     async def start(self):
         self.log.brain("TailorAgent started — watching queue")
@@ -67,12 +110,24 @@ class TailorAgent:
         variant_name = VARIANT_MAP.get(category, VARIANT_MAP["engineering"])
         variant_path = os.path.join(BASE_RESUMES_DIR, variant_name)
 
-        if not os.path.exists(variant_path):
-            variant_path = os.path.join(BASE_RESUMES_DIR, VARIANT_MAP["engineering"])
-            variant_name = VARIANT_MAP["engineering"]
+        base_resume = None
 
-        with open(variant_path) as f:
-            base_resume = f.read()
+        if self._parsed_resume_data:
+            self.log.detail("Using parsed resume data — building dynamic template")
+            base_resume = build_resume_text(
+                self._parsed_resume_data,
+                category=category,
+            )
+            variant_name = f"parsed_{category}"
+
+        if base_resume is None:
+            if not os.path.exists(variant_path):
+                variant_path = os.path.join(BASE_RESUMES_DIR, VARIANT_MAP["engineering"])
+                variant_name = VARIANT_MAP["engineering"]
+
+            with open(variant_path) as f:
+                base_resume = f.read()
+
         self.log.variant(variant_name)
 
         use_llm = self.cfg.get("tailor", {}).get("use_llm", True)

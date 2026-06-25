@@ -69,8 +69,56 @@ export interface ResumeVariant {
   category: string;
   content: string;
   is_active: boolean;
+  parsed_data?: ParsedResumeData | null;
+  source_file?: string | null;
   created_at: string;
   updated_at?: string;
+}
+
+export interface ParsedResumeData {
+  personal: {
+    full_name?: string;
+    email?: string;
+    phone?: string;
+    linkedin_url?: string;
+    github_url?: string;
+    location?: { city?: string; state?: string };
+  };
+  summary: string;
+  skills: {
+    primary: string[];
+    secondary: string[];
+    tools: string[];
+    frameworks: string[];
+    databases: string[];
+    cloud: string[];
+    soft_skills: string[];
+  };
+  experience: Array<{
+    title: string;
+    company: string;
+    type: string;
+    start_date: string;
+    end_date: string;
+    description: string;
+    achievements: string[];
+  }>;
+  education: {
+    highest: Record<string, string>;
+    secondary: Record<string, string>;
+    high_school: Record<string, string>;
+  };
+  projects: Array<{
+    name: string;
+    description: string;
+    tech_stack: string[];
+    url: string;
+  }>;
+  certifications: Array<{
+    name: string;
+    issuer: string;
+    issue_date: string;
+  }>;
 }
 
 export interface ReviewPayload {

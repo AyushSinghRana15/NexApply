@@ -19,6 +19,7 @@ tailor:
   use_llm: true
   generate_cover_letter: true
   max_cover_letter_words: 150
+  use_user_resume: false
 
 profile:
   categories: ["engineering", "data", "product", "devops", "design", "ml"]
