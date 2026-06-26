@@ -16,3 +16,4 @@ websockets
 apscheduler
 slowapi
 fpdf2
+python-multipart

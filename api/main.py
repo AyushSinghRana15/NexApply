@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -24,7 +25,6 @@ async def lifespan(app: FastAPI):
     stop_scheduler()
 
 
-import os
 
 app = FastAPI(title="NexApply API", version="0.1.0", lifespan=lifespan)
 
