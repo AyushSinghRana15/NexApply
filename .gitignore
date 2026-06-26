@@ -11,3 +11,4 @@ browser_profiles/
 
 nexapply.db
 *.pyc
+logs/
