@@ -18,11 +18,31 @@ os.makedirs("logs", exist_ok=True)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    _run_migrations()
     from api.services.scheduler import start_scheduler
-    await start_scheduler()
+    start_scheduler()
     yield
     from api.services.scheduler import stop_scheduler
     stop_scheduler()
+
+
+def _run_migrations():
+    try:
+        from sqlalchemy import inspect, text as sa_text
+        from api.db.database import SessionLocal
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        if "resume_variants" not in tables:
+            return
+        existing = {c["name"] for c in inspector.get_columns("resume_variants")}
+        with SessionLocal() as conn:
+            if "parsed_data" not in existing:
+                conn.execute(sa_text("ALTER TABLE resume_variants ADD COLUMN parsed_data TEXT"))
+            if "source_file" not in existing:
+                conn.execute(sa_text("ALTER TABLE resume_variants ADD COLUMN source_file VARCHAR(256)"))
+            conn.commit()
+    except Exception:
+        pass
 
 
 
