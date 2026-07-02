@@ -4,3 +4,4 @@ export { Applications } from "./Applications";
 export { Analytics } from "./Analytics";
 export { Resumes } from "./Resumes";
 export { Settings } from "./Settings";
+export { Apps } from "./Apps";

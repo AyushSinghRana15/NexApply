@@ -1,6 +1,9 @@
+import asyncio
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+import yaml
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +17,8 @@ from api.routes import applications, config, health, jobs, logs, resumes, stats,
 
 os.makedirs("logs", exist_ok=True)
 
+_agent_tasks: list[asyncio.Task] = []
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,9 +26,48 @@ async def lifespan(app: FastAPI):
     _run_migrations()
     from api.services.scheduler import start_scheduler
     start_scheduler()
+    _start_agents()
     yield
+    for t in _agent_tasks:
+        t.cancel()
     from api.services.scheduler import stop_scheduler
     stop_scheduler()
+
+
+def _start_agents():
+    try:
+        with open("config.yaml") as f:
+            config = yaml.safe_load(f) or {}
+        from core.queue import JobQueue
+        from core.radar import RadarAgent
+        from core.tailor import TailorAgent
+        from core.fleet import ApplyFleet
+        from core.logger import Logger
+        log = Logger()
+
+        job_queue = JobQueue()
+        tailor_queue = JobQueue()
+        guard_queue = JobQueue()
+
+        radar = RadarAgent(config, job_queue)
+        tailor = TailorAgent(config, job_queue, tailor_queue)
+        fleet = ApplyFleet(config, tailor_queue, guard_queue)
+
+        mode = config.get("autonomy", {}).get("mode", "full")
+        need_guard = mode != "full"
+
+        if need_guard:
+            from api.core.websocket import ws_manager as api_ws
+            from core.guard import GuardAgent
+            guard = GuardAgent(config, guard_queue, api_ws)
+            _agent_tasks.append(asyncio.create_task(guard.start()))
+
+        _agent_tasks.append(asyncio.create_task(radar.start()))
+        _agent_tasks.append(asyncio.create_task(tailor.start()))
+        _agent_tasks.append(asyncio.create_task(fleet.start()))
+        log.start("Agent pipeline started via API lifespan")
+    except Exception as e:
+        print(f"[nexapply] Failed to start agents: {e}")
 
 
 def _run_migrations():

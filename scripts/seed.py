@@ -3,7 +3,6 @@ Seed script — injects demo applications into the database for a live-looking U
 
 Runs automatically in run.sh when the applications table is empty.
 """
-import json
 import os
 import sys
 from datetime import datetime, timedelta, timezone
@@ -75,9 +74,9 @@ def seed():
             company=d["company"],
             match_score=d["match_score"],
             resume_variant=d["resume_variant"],
-            keywords_injected=json.dumps(d["keywords"]),
+            keywords_injected=d["keywords"],
             screenshot_path="",
-            form_data="{}",
+            form_data={},
             status=d["status"],
             decision=d.get("decision", ""),
             decided_at=created.isoformat() if d.get("decision") else "",

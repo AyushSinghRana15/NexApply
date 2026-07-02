@@ -1,6 +1,8 @@
 platforms:
   indeed: true
   naukri: true
+  glassdoor: true
+  foundit: true
   internshala: true
 
 polling_interval_seconds: 30
@@ -39,6 +41,8 @@ autonomy:
   max_per_platform:
     indeed: 100
     naukri: 100
+    glassdoor: 50
+    foundit: 50
     internshala: 100
   cooldown_between_apps: 45
   apply_hours:

@@ -1,9 +1,38 @@
+import json
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Integer, String, Text
+from sqlalchemy import DateTime, Integer, String, Text, TypeDecorator
 from sqlalchemy.orm import Mapped, mapped_column
 
 from api.db.database import Base
+
+
+class JSONList(TypeDecorator):
+    impl = Text
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            return json.dumps(value)
+        return "[]"
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            if isinstance(value, str):
+                return json.loads(value)
+            return value
+        return []
+
+
+class JSONDict(TypeDecorator):
+    impl = Text
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            return json.dumps(value)
+        return "{}"
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            if isinstance(value, str):
+                return json.loads(value)
+            return value
+        return {}
 
 
 class Application(Base):
@@ -16,9 +45,9 @@ class Application(Base):
     company: Mapped[str] = mapped_column(String(255), nullable=False)
     match_score: Mapped[int] = mapped_column(Integer, default=0)
     resume_variant: Mapped[str] = mapped_column(String(64), default="")
-    keywords_injected: Mapped[str] = mapped_column(Text, default="[]")
+    keywords_injected: Mapped[list] = mapped_column(JSONList, default=list)
     screenshot_path: Mapped[str] = mapped_column(String(512), default="")
-    form_data: Mapped[str] = mapped_column(Text, default="{}")
+    form_data: Mapped[dict] = mapped_column(JSONDict, default=dict)
     status: Mapped[str] = mapped_column(String(32), default="PENDING_REVIEW")
     decision: Mapped[str] = mapped_column(String(32), default="")
     decided_at: Mapped[str] = mapped_column(String(64), default="")

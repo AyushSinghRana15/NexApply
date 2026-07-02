@@ -19,9 +19,9 @@ export function Table<T extends { id: number | string }>({ columns, data, onRowC
     <div className="overflow-x-auto rounded-xl border border-border">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-dark-800 border-b border-border">
+          <tr className="bg-ink-800 border-b border-border">
             {columns.map((col) => (
-              <th key={col.key} className={cn("text-left px-4 py-3 font-medium text-dark-400", col.className)}>
+              <th key={col.key} className={cn("text-left px-4 py-3 font-medium text-ink-400", col.className)}>
                 {col.header}
               </th>
             ))}
@@ -46,7 +46,7 @@ export function Table<T extends { id: number | string }>({ columns, data, onRowC
           ))}
           {data.length === 0 && (
             <tr>
-              <td colSpan={columns.length} className="px-4 py-8 text-center text-dark-500">
+              <td colSpan={columns.length} className="px-4 py-8 text-center text-ink-500">
                 No data
               </td>
             </tr>

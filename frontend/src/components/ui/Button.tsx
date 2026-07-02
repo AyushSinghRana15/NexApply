@@ -17,7 +17,7 @@ export function Button({ variant = "primary", size = "md", className, children, 
         size === "lg" && "px-6 py-3 text-base",
         variant === "primary" && "bg-accent hover:bg-accent-hover text-white",
         variant === "secondary" && "bg-surface hover:bg-surface-hover text-text-primary border border-border",
-        variant === "ghost" && "hover:bg-surface-hover text-dark-400",
+        variant === "ghost" && "hover:bg-surface-hover text-ink-400",
         variant === "danger" && "bg-red-500/10 hover:bg-red-500/20 text-red-400",
         className
       )}

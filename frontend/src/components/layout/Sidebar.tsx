@@ -6,6 +6,7 @@ import {
   BarChart3,
   FileText,
   Settings,
+  LogIn,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ const links = [
   { to: "/applications", label: "Applications", icon: Briefcase },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/resumes", label: "Resumes", icon: FileText },
+  { to: "/apps", label: "App Login", icon: LogIn },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -26,7 +28,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-50 w-60 bg-dark-800 border-r border-border transform transition-transform duration-200 lg:relative lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 w-60 bg-ink-900 border-r border-border transform transition-transform duration-300 lg:relative lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}
     >
@@ -36,7 +38,7 @@ export function Sidebar() {
         </span>
         <button
           onClick={toggleSidebar}
-          className="lg:hidden text-dark-400 hover:text-text-primary"
+          className="lg:hidden text-ink-400 hover:text-text-primary"
         >
           <X size={20} />
         </button>
@@ -51,8 +53,8 @@ export function Sidebar() {
               cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-accent/10 text-accent"
-                  : "text-dark-400 hover:text-text-primary hover:bg-surface-hover"
+                  ? "bg-accent/10 text-accent border-r-2 border-accent"
+                  : "text-ink-400 hover:text-text-primary hover:bg-surface-hover"
               )
             }
           >

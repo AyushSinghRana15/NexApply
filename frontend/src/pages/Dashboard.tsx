@@ -58,12 +58,12 @@ function AgentCard({ agent }: { agent: string }) {
     <div className="bg-surface rounded-xl border border-border p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-dark-700 text-accent">
+          <div className="p-2 rounded-lg bg-ink-700 text-accent">
             <meta.icon size={16} />
           </div>
           <div>
             <p className="text-sm font-semibold">{meta.name}</p>
-            <p className="text-xs text-dark-500">{meta.role}</p>
+            <p className="text-xs text-ink-500">{meta.role}</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
@@ -78,7 +78,7 @@ function AgentCard({ agent }: { agent: string }) {
           </span>
         </div>
       </div>
-      <div className="flex items-center justify-between text-xs text-dark-400">
+      <div className="flex items-center justify-between text-xs text-ink-400">
         <span>{info?.jobs_today ?? 0} jobs today</span>
         <span>{info?.last_active ? formatTimeAgo(info.last_active) : "—"}</span>
       </div>
@@ -102,7 +102,7 @@ export function Dashboard() {
     return config.platforms as Record<string, { enabled?: boolean; cookie_valid?: boolean }>;
   }, [config]);
 
-  const displayPlatforms = ["indeed", "naukri", "internshala"];
+  const displayPlatforms = ["indeed", "naukri", "glassdoor", "foundit", "internshala"];
 
   const responseRate = emailStats?.response_rate ?? 0;
 
@@ -111,11 +111,11 @@ export function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-dark-400 text-sm mt-1">NexApply agent pipeline overview</p>
+          <p className="text-ink-400 text-sm mt-1">NexApply agent pipeline overview</p>
         </div>
         <div className="flex items-center gap-2">
           <span className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500 animate-pulse" : "bg-red-500")} />
-          <span className="text-xs text-dark-400">{isConnected ? "Live" : "Disconnected"}</span>
+          <span className="text-xs text-ink-400">{isConnected ? "Live" : "Disconnected"}</span>
         </div>
       </div>
 
@@ -128,32 +128,40 @@ export function Dashboard() {
           </>
         ) : (
           <>
-            <StatCard
-              label="Applied"
-              value={stats?.total_applied ?? 0}
-              icon={<Send size={20} />}
-            />
-            <StatCard
-              label="Pending Review"
-              value={(stats?.total_pending ?? 0) + pendingReviews.length}
-              icon={<Clock size={20} />}
-            />
-            <StatCard
-              label="Avg Score"
-              value={stats ? `${stats.avg_match_score}%` : "—"}
-              icon={<BarChart3 size={20} />}
-            />
-            <StatCard
-              label="Response Rate"
-              value={emailStats ? `${responseRate}%` : "—"}
-              icon={<Mail size={20} />}
-            />
+            <div className="animate-fade-in">
+              <StatCard
+                label="Applied"
+                value={stats?.total_applied ?? 0}
+                icon={<Send size={20} />}
+              />
+            </div>
+            <div className="animate-fade-in" style={{ animationDelay: "0.05s" }}>
+              <StatCard
+                label="Pending Review"
+                value={(stats?.total_pending ?? 0) + pendingReviews.length}
+                icon={<Clock size={20} />}
+              />
+            </div>
+            <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
+              <StatCard
+                label="Avg Score"
+                value={stats ? `${stats.avg_match_score}%` : "—"}
+                icon={<BarChart3 size={20} />}
+              />
+            </div>
+            <div className="animate-fade-in" style={{ animationDelay: "0.15s" }}>
+              <StatCard
+                label="Response Rate"
+                value={emailStats ? `${responseRate}%` : "—"}
+                icon={<Mail size={20} />}
+              />
+            </div>
           </>
         )}
       </div>
 
-      <div>
-        <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider mb-3">Agent Status</h2>
+      <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
+        <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-3">Agent Status</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Object.keys(agentMeta).map((key) => (
             <AgentCard key={key} agent={key} />
@@ -162,27 +170,27 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider mb-3">Activity Feed</h2>
+        <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in" style={{ animationDelay: "0.15s" }}>
+          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-3">Activity Feed</h2>
           <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1">
             {activityFeed.length === 0 && (
-              <p className="text-dark-500 text-sm text-center py-8">Waiting for activity...</p>
+              <p className="text-ink-500 text-sm text-center py-8">Waiting for activity...</p>
             )}
             {activityFeed.slice(0, 100).map((event) => (
               <div
                 key={event.id}
                 className="flex items-start gap-3 py-2 px-2 rounded-lg hover:bg-surface-hover transition-colors"
               >
-                <div className="p-1.5 rounded-md bg-dark-700 mt-0.5 shrink-0">
-                  <EventIcon type={event.type} className="text-dark-400" />
+                <div className="p-1.5 rounded-md bg-ink-700 mt-0.5 shrink-0">
+                  <EventIcon type={event.type} className="text-ink-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-dark-300 truncate">{event.message}</p>
+                  <p className="text-sm text-ink-300 truncate">{event.message}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     {event.platform && (
-                      <span className="text-[10px] text-dark-500 uppercase">{event.platform}</span>
+                      <span className="text-[10px] text-ink-500 uppercase">{event.platform}</span>
                     )}
-                    <span className="text-[10px] text-dark-500">{formatTimeAgo(event.timestamp)}</span>
+                    <span className="text-[10px] text-ink-500">{formatTimeAgo(event.timestamp)}</span>
                   </div>
                 </div>
               </div>
@@ -190,8 +198,8 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider mb-3">Platform Health</h2>
+        <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-3">Platform Health</h2>
           <div className="space-y-3">
             {displayPlatforms.map((platform) => {
               const pCfg = configPlatforms?.[platform];
@@ -199,7 +207,7 @@ export function Dashboard() {
               return (
                 <div
                   key={platform}
-                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-dark-800"
+                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-ink-800"
                 >
                   <span className="text-sm font-medium capitalize">{platform}</span>
                   {connected ? (
@@ -208,7 +216,7 @@ export function Dashboard() {
                       <span className="text-xs">Connected</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 text-dark-500">
+                    <div className="flex items-center gap-1.5 text-ink-500">
                       <Minus size={14} />
                       <span className="text-xs">Disabled</span>
                     </div>
@@ -217,15 +225,15 @@ export function Dashboard() {
               );
             })}
             {(!config && !configPlatforms) && (
-              <p className="text-dark-500 text-sm text-center py-4">Loading platform status...</p>
+              <p className="text-ink-500 text-sm text-center py-4">Loading platform status...</p>
             )}
           </div>
         </div>
       </div>
 
-      <div className="bg-surface rounded-xl border border-border p-5">
+      <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in" style={{ animationDelay: "0.25s" }}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider">Recent Applications</h2>
+          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider">Recent Applications</h2>
           <Link to="/applications" className="text-xs text-accent hover:underline">View all</Link>
         </div>
         {appsLoading ? (
@@ -239,7 +247,7 @@ export function Dashboard() {
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{app.title}</p>
-                  <p className="text-xs text-dark-400">{app.company}</p>
+                  <p className="text-xs text-ink-400">{app.company}</p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-4">
                   <Badge
@@ -253,14 +261,14 @@ export function Dashboard() {
                   >
                     {app.status.replace("_", " ")}
                   </Badge>
-                  <span className="text-xs text-dark-500 w-14 text-right">
+                  <span className="text-xs text-ink-500 w-14 text-right">
                     {formatTimeAgo(app.created_at)}
                   </span>
                 </div>
               </div>
             ))}
             {(!recentApps?.items || recentApps.items.length === 0) && (
-              <p className="text-dark-500 text-sm text-center py-6">No applications yet</p>
+              <p className="text-ink-500 text-sm text-center py-6">No applications yet</p>
             )}
           </div>
         )}

@@ -10,5 +10,6 @@ cookies/
 browser_profiles/
 
 nexapply.db
+nexapply.db.bak
 *.pyc
 logs/

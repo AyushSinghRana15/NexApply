@@ -163,6 +163,16 @@ export interface ActivityLogEntry {
   data?: Record<string, unknown>;
 }
 
+export type PlatformName = "naukri" | "indeed" | "glassdoor" | "foundit" | "internshala";
+
+export interface CookieStatus {
+  platform: PlatformName;
+  label: string;
+  description: string;
+  loaded: boolean;
+  last_captured?: string;
+}
+
 export type WSMessage =
   | { type: "REVIEW_READY"; payload: ReviewPayload }
   | { type: "REVIEW_CLEARED"; job_id: string; decision: string }

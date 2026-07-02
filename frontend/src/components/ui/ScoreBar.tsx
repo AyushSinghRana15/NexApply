@@ -12,7 +12,7 @@ export function ScoreBar({ score, size = "md" }: ScoreBarProps) {
   return (
     <div
       className={cn(
-        "rounded-full bg-dark-700 overflow-hidden",
+        "rounded-full bg-ink-700 overflow-hidden",
         size === "sm" && "h-1.5 w-20",
         size === "md" && "h-2 w-24",
         size === "lg" && "h-3 w-full"

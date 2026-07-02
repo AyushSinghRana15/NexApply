@@ -38,6 +38,8 @@ export function platformIcon(platform: string): string {
   const map: Record<string, string> = {
     indeed: "Globe",
     naukri: "Briefcase",
+    glassdoor: "Eye",
+    foundit: "Target",
     internshala: "GraduationCap",
   };
   return map[platform.toLowerCase()] ?? "ExternalLink";

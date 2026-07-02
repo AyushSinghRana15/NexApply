@@ -12,16 +12,18 @@ import { fetchApplications } from "@/api/client";
 import { StatCard } from "@/components/ui";
 
 const PLATFORM_COLORS: Record<string, string> = {
-  Indeed: "#3b82f6",
+  Indeed: "#c04a4a",
   Naukri: "#ef4444",
-  Internshala: "#22c55e",
+  Glassdoor: "#4a8c5c",
+  Foundit: "#f97316",
+  Internshala: "#14b8a6",
 };
 
-const SCORE_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#16a34a"];
+const SCORE_COLORS = ["#ef4444", "#f97316", "#eab308", "#4a8c5c", "#16a34a"];
 
 const TOOLTIP_STYLE = {
-  background: "#1e293b",
-  border: "1px solid #334155",
+  background: "#1c1814",
+  border: "1px solid #2c241e",
   borderRadius: "8px",
   fontSize: "13px",
   outline: "none",
@@ -131,7 +133,7 @@ export function Analytics() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Analytics</h1>
-        <p className="text-dark-400 text-sm mt-1">Detailed pipeline statistics and trends</p>
+        <p className="text-ink-400 text-sm mt-1">Detailed pipeline statistics and trends</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -147,26 +149,26 @@ export function Analytics() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider mb-4">Applications Timeline</h2>
+          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-4">Applications Timeline</h2>
           {timelineData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={timelineData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="date" stroke="#64748b" fontSize={12} tickLine={false} />
-                <YAxis stroke="#64748b" fontSize={12} tickLine={false} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#3d342a" />
+                <XAxis dataKey="date" stroke="#8a7c6a" fontSize={12} tickLine={false} />
+                <YAxis stroke="#8a7c6a" fontSize={12} tickLine={false} allowDecimals={false} />
                 <Tooltip contentStyle={TOOLTIP_STYLE} />
                 <Legend />
-                <Bar dataKey="Applied" fill="#22c55e" radius={[4, 4, 0, 0]} stackId="a" />
-                <Bar dataKey="Skipped" fill="#64748b" radius={[4, 4, 0, 0]} stackId="a" />
+                <Bar dataKey="Applied" fill="#4a8c5c" radius={[4, 4, 0, 0]} stackId="a" />
+                <Bar dataKey="Skipped" fill="#5c5042" radius={[4, 4, 0, 0]} stackId="a" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-dark-500 text-sm text-center py-12">No data yet</p>
+            <p className="text-ink-500 text-sm text-center py-12">No data yet</p>
           )}
         </div>
 
         <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider mb-4">Platform Breakdown</h2>
+          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-4">Platform Breakdown</h2>
           {platformData.length > 0 ? (
             <div className="relative">
               <ResponsiveContainer width="100%" height={300}>
@@ -181,7 +183,7 @@ export function Analytics() {
                     dataKey="value"
                   >
                     {platformData.map((entry) => (
-                      <Cell key={entry.name} fill={PLATFORM_COLORS[entry.name] ?? "#64748b"} />
+                      <Cell key={entry.name} fill={PLATFORM_COLORS[entry.name] ?? "#8a7c6a"} />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
@@ -189,34 +191,34 @@ export function Analytics() {
               </ResponsiveContainer>
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center">
                 <p className="text-2xl font-bold text-text-primary">{totalPlatformCount}</p>
-                <p className="text-[10px] text-dark-500">Total</p>
+                <p className="text-[10px] text-ink-500">Total</p>
               </div>
               <div className="flex justify-center gap-6 mt-2">
                 {platformData.map((entry) => (
                   <div key={entry.name} className="flex items-center gap-2 text-xs">
                     <span
                       className="w-2.5 h-2.5 rounded-full"
-                      style={{ background: PLATFORM_COLORS[entry.name] ?? "#64748b" }}
+                      style={{ background: PLATFORM_COLORS[entry.name] ?? "#8a7c6a" }}
                     />
-                    <span className="text-dark-400">{entry.name}</span>
+                    <span className="text-ink-400">{entry.name}</span>
                     <span className="font-medium text-text-primary">{entry.value}</span>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <p className="text-dark-500 text-sm text-center py-12">No data yet</p>
+            <p className="text-ink-500 text-sm text-center py-12">No data yet</p>
           )}
         </div>
 
         <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider mb-4">Match Score Distribution</h2>
+          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-4">Match Score Distribution</h2>
           {scoreBuckets.some((b) => b.count > 0) ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={scoreBuckets}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="range" stroke="#64748b" fontSize={12} tickLine={false} />
-                <YAxis stroke="#64748b" fontSize={12} tickLine={false} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#3d342a" />
+                <XAxis dataKey="range" stroke="#8a7c6a" fontSize={12} tickLine={false} />
+                <YAxis stroke="#8a7c6a" fontSize={12} tickLine={false} allowDecimals={false} />
                 <Tooltip contentStyle={TOOLTIP_STYLE} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {scoreBuckets.map((entry) => (
@@ -226,36 +228,36 @@ export function Analytics() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-dark-500 text-sm text-center py-12">No data yet</p>
+            <p className="text-ink-500 text-sm text-center py-12">No data yet</p>
           )}
         </div>
 
         <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider mb-4">Decision Speed</h2>
+          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-4">Decision Speed</h2>
           {decisionSpeedData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={decisionSpeedData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="date" stroke="#64748b" fontSize={12} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#3d342a" />
+                <XAxis dataKey="date" stroke="#8a7c6a" fontSize={12} tickLine={false} />
                 <YAxis
-                  stroke="#64748b"
+                  stroke="#8a7c6a"
                   fontSize={12}
                   tickLine={false}
-                  label={{ value: "seconds", angle: -90, position: "insideLeft", fill: "#64748b", fontSize: 11 }}
+                  label={{ value: "seconds", angle: -90, position: "insideLeft", fill: "#8a7c6a", fontSize: 11 }}
                 />
                 <Tooltip contentStyle={TOOLTIP_STYLE} />
                 <Line
                   type="monotone"
                   dataKey="avgSeconds"
-                  stroke="#3b82f6"
+                  stroke="#c04a4a"
                   strokeWidth={2}
-                  dot={{ fill: "#3b82f6", r: 4 }}
+                  dot={{ fill: "#c04a4a", r: 4 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-dark-500 text-sm text-center py-12">No data yet</p>
+            <p className="text-ink-500 text-sm text-center py-12">No data yet</p>
           )}
         </div>
       </div>

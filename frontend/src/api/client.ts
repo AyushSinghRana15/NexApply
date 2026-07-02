@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Application, EmailTrackingStats, Job, ParsedResumeData, PlatformBreakdown, ResumeVariant, StatsSummary, TimelinePoint, ActivityLogEntry } from "@/types";
+import type { Application, CookieStatus, EmailTrackingStats, Job, ParsedResumeData, PlatformBreakdown, ResumeVariant, StatsSummary, TimelinePoint, ActivityLogEntry } from "@/types";
 
 const api = axios.create({
   baseURL: "/api",
@@ -134,6 +134,21 @@ export async function fetchHealth(): Promise<Record<string, unknown>> {
 
 export async function clearApplications(): Promise<void> {
   await api.delete("/applications");
+}
+
+export async function fetchCookieStatus(): Promise<{ items: CookieStatus[] }> {
+  const { data } = await api.get("/cookies/status");
+  return data;
+}
+
+export async function captureCookies(platform: string): Promise<{ success: boolean; message: string }> {
+  const { data } = await api.post("/cookies/capture", { platform });
+  return data;
+}
+
+export async function clearCookies(platform: string): Promise<{ success: boolean; message: string }> {
+  const { data } = await api.post("/cookies/clear", { platform });
+  return data;
 }
 
 export default api;

@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
-import { Dashboard, Review, Applications, Analytics, Resumes, Settings } from "@/pages";
+import { Dashboard, Review, Applications, Analytics, Resumes, Settings, Apps } from "@/pages";
 import { WebSocketInit } from "@/components/WebSocketInit";
 
 const queryClient = new QueryClient({
@@ -27,6 +27,7 @@ export default function App() {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/resumes" element={<Resumes />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/apps" element={<Apps />} />
           </Route>
         </Routes>
       </BrowserRouter>

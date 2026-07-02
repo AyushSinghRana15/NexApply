@@ -30,11 +30,11 @@ function TagInput({ tags, onChange, placeholder }: {
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5 p-2 bg-dark-800 rounded-lg border border-border min-h-[38px] focus-within:border-accent transition-colors">
+    <div className="flex flex-wrap gap-1.5 p-2 bg-ink-800 rounded-lg border border-border min-h-[38px] focus-within:border-accent transition-colors">
       {tags.map((tag) => (
         <span
           key={tag}
-          className="inline-flex items-center gap-1 px-2 py-0.5 bg-dark-700 rounded text-xs text-dark-300"
+          className="inline-flex items-center gap-1 px-2 py-0.5 bg-ink-700 rounded text-xs text-ink-300"
         >
           {tag}
           <button
@@ -51,7 +51,7 @@ function TagInput({ tags, onChange, placeholder }: {
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={tags.length === 0 ? placeholder : ""}
-        className="flex-1 min-w-[100px] bg-transparent outline-none text-sm text-dark-300 placeholder:text-dark-500"
+        className="flex-1 min-w-[100px] bg-transparent outline-none text-sm text-ink-300 placeholder:text-ink-500"
       />
     </div>
   );
@@ -71,7 +71,7 @@ function Toggle({ checked, onChange, label }: {
         onClick={() => onChange(!checked)}
         className={cn(
           "relative w-10 h-5 rounded-full transition-colors shrink-0",
-          checked ? "bg-accent" : "bg-dark-700"
+          checked ? "bg-accent" : "bg-ink-700"
         )}
       >
         <span
@@ -81,15 +81,17 @@ function Toggle({ checked, onChange, label }: {
           )}
         />
       </button>
-      {label && <span className="text-sm text-dark-300">{label}</span>}
+      {label && <span className="text-sm text-ink-300">{label}</span>}
     </label>
   );
 }
 
 // ── Types ──
 
+type PlatformKey = "indeed" | "naukri" | "glassdoor" | "foundit" | "internshala";
+
 interface SettingsState {
-  platforms: { indeed: boolean; naukri: boolean; internshala: boolean };
+  platforms: Record<PlatformKey, boolean>;
   polling_interval_seconds: number;
   filters: { titles: string[]; locations: string[]; exclude_keywords: string[] };
   min_match_score: number;
@@ -102,7 +104,7 @@ interface SettingsState {
 }
 
 const DEFAULT_SETTINGS: SettingsState = {
-  platforms: { indeed: true, naukri: true, internshala: true },
+  platforms: { indeed: true, naukri: true, glassdoor: true, foundit: true, internshala: true },
   polling_interval_seconds: 30,
   filters: { titles: [], locations: [], exclude_keywords: [] },
   min_match_score: 60,
@@ -135,6 +137,8 @@ export function Settings() {
   const cookieStatus: Record<string, "loaded" | "missing"> = (configData as any)?.cookies ?? {
     indeed: "missing",
     naukri: "missing",
+    glassdoor: "missing",
+    foundit: "missing",
     internshala: "missing",
   };
 
@@ -157,6 +161,8 @@ export function Settings() {
       platforms: {
         indeed: platforms.indeed ?? true,
         naukri: platforms.naukri ?? true,
+        glassdoor: platforms.glassdoor ?? true,
+        foundit: platforms.foundit ?? true,
         internshala: platforms.internshala ?? true,
       },
       polling_interval_seconds: cfg.polling_interval_seconds ?? DEFAULT_SETTINGS.polling_interval_seconds,
@@ -216,7 +222,7 @@ export function Settings() {
     const c: Record<string, unknown> = {};
     const orig = JSON.parse(originalSnapshot) as SettingsState;
 
-    for (const k of ["indeed", "naukri", "internshala"] as const) {
+    for (const k of ["indeed", "naukri", "glassdoor", "foundit", "internshala"] as PlatformKey) {
       if (settings.platforms[k] !== orig.platforms[k]) {
         c[`platforms.${k}`] = settings.platforms[k];
       }
@@ -339,9 +345,9 @@ export function Settings() {
 
       {/* A. Platform Toggles */}
       <section className="bg-surface rounded-xl border border-border p-6 space-y-4">
-        <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider">Platforms</h2>
+        <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider">Platforms</h2>
         <div className="space-y-3">
-          {(["indeed", "naukri", "internshala"] as const).map((p) => (
+          {(["indeed", "naukri", "glassdoor", "foundit", "internshala"] as PlatformKey[]).map((p) => (
             <div key={p} className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Toggle
@@ -352,9 +358,9 @@ export function Settings() {
               </div>
               <span className="text-xs">
                 {cookieStatus[p] === "loaded" ? (
-                  <span className="text-green-400">✅ Cookies loaded</span>
+                  <span className="text-green-400">Cookies loaded</span>
                 ) : (
-                  <span className="text-yellow-400">⚠️ No cookies</span>
+                  <span className="text-yellow-400">No cookies</span>
                 )}
               </span>
             </div>
@@ -364,10 +370,10 @@ export function Settings() {
 
       {/* B. Job Filters */}
       <section className="bg-surface rounded-xl border border-border p-6 space-y-5">
-        <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider">Job Filters</h2>
+        <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider">Job Filters</h2>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1.5">Title Keywords</label>
+          <label className="block text-sm text-ink-400 mb-1.5">Title Keywords</label>
           <TagInput
             tags={settings.filters.titles}
             onChange={(v) => updateFilter("titles", v)}
@@ -376,7 +382,7 @@ export function Settings() {
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1.5">Exclude Keywords</label>
+          <label className="block text-sm text-ink-400 mb-1.5">Exclude Keywords</label>
           <TagInput
             tags={settings.filters.exclude_keywords}
             onChange={(v) => updateFilter("exclude_keywords", v)}
@@ -385,7 +391,7 @@ export function Settings() {
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1.5">Locations</label>
+          <label className="block text-sm text-ink-400 mb-1.5">Locations</label>
           <TagInput
             tags={settings.filters.locations}
             onChange={(v) => updateFilter("locations", v)}
@@ -394,7 +400,7 @@ export function Settings() {
         </div>
 
         <div>
-          <label className="block text-sm text-dark-400 mb-1.5">
+          <label className="block text-sm text-ink-400 mb-1.5">
             Min Match Score: <span className="text-accent font-semibold">{settings.min_match_score}</span>
           </label>
           <input
@@ -403,13 +409,13 @@ export function Settings() {
             max={100}
             value={settings.min_match_score}
             onChange={(e) => setSettings((prev) => ({ ...prev, min_match_score: Number(e.target.value) }))}
-            className="w-full h-2 bg-dark-700 rounded-lg appearance-none cursor-pointer
+            className="w-full h-2 bg-ink-700 rounded-lg appearance-none cursor-pointer
               [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
               [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-md
               [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full
               [&::-moz-range-thumb]:bg-accent [&::-moz-range-thumb]:border-0"
           />
-          <div className="flex justify-between text-[10px] text-dark-500 mt-1">
+          <div className="flex justify-between text-[10px] text-ink-500 mt-1">
             <span>0</span>
             <span>50</span>
             <span>100</span>
@@ -419,33 +425,33 @@ export function Settings() {
 
       {/* C. Agent Timing */}
       <section className="bg-surface rounded-xl border border-border p-6 space-y-5">
-        <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider">Agent Timing</h2>
+        <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider">Agent Timing</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-dark-400 mb-1.5">Polling Interval (seconds)</label>
+            <label className="block text-sm text-ink-400 mb-1.5">Polling Interval (seconds)</label>
             <input
               type="number"
               min={5}
               value={settings.polling_interval_seconds}
               onChange={(e) => setSettings((prev) => ({ ...prev, polling_interval_seconds: Math.max(5, Number(e.target.value)) }))}
-              className="w-full px-3 py-2 bg-dark-800 border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
+              className="w-full px-3 py-2 bg-ink-800 border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-dark-400 mb-1.5">Review Timeout (seconds)</label>
+            <label className="block text-sm text-ink-400 mb-1.5">Review Timeout (seconds)</label>
             <input
               type="number"
               min={30}
               value={settings.review_timeout_seconds}
               onChange={(e) => setSettings((prev) => ({ ...prev, review_timeout_seconds: Math.max(30, Number(e.target.value)) }))}
-              className="w-full px-3 py-2 bg-dark-800 border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
+              className="w-full px-3 py-2 bg-ink-800 border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-dark-400 mb-1.5">
+            <label className="block text-sm text-ink-400 mb-1.5">
               Browser Concurrency: <span className="text-accent font-semibold">{settings.max_concurrent_browsers}</span>
             </label>
             <input
@@ -454,13 +460,13 @@ export function Settings() {
               max={5}
               value={settings.max_concurrent_browsers}
               onChange={(e) => setSettings((prev) => ({ ...prev, max_concurrent_browsers: Number(e.target.value) }))}
-              className="w-full h-2 bg-dark-700 rounded-lg appearance-none cursor-pointer
+              className="w-full h-2 bg-ink-700 rounded-lg appearance-none cursor-pointer
                 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
                 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-md
                 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full
                 [&::-moz-range-thumb]:bg-accent [&::-moz-range-thumb]:border-0"
             />
-            <div className="flex justify-between text-[10px] text-dark-500 mt-1">
+            <div className="flex justify-between text-[10px] text-ink-500 mt-1">
               <span>1</span>
               <span>3</span>
               <span>5</span>
@@ -468,14 +474,14 @@ export function Settings() {
           </div>
 
           <div>
-            <label className="block text-sm text-dark-400 mb-1.5">Groq Timeout (seconds)</label>
+            <label className="block text-sm text-ink-400 mb-1.5">Groq Timeout (seconds)</label>
             <input
               type="number"
               min={1}
               step={0.5}
               value={settings.groq_timeout_seconds}
               onChange={(e) => setSettings((prev) => ({ ...prev, groq_timeout_seconds: Math.max(1, Number(e.target.value)) }))}
-              className="w-full px-3 py-2 bg-dark-800 border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
+              className="w-full px-3 py-2 bg-ink-800 border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
             />
           </div>
         </div>
@@ -483,36 +489,36 @@ export function Settings() {
 
       {/* D. LLM Config */}
       <section className="bg-surface rounded-xl border border-border p-6 space-y-5">
-        <h2 className="text-sm font-semibold text-dark-400 uppercase tracking-wider">LLM Configuration</h2>
+        <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider">LLM Configuration</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-dark-400 mb-1.5">Groq Model</label>
+            <label className="block text-sm text-ink-400 mb-1.5">Groq Model</label>
             <input
               value={settings.groq_model}
               onChange={(e) => setSettings((prev) => ({ ...prev, groq_model: e.target.value }))}
               placeholder="llama-3.3-70b-versatile"
-              className="w-full px-3 py-2 bg-dark-800 border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
+              className="w-full px-3 py-2 bg-ink-800 border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-dark-400 mb-1.5">Ollama Host</label>
+            <label className="block text-sm text-ink-400 mb-1.5">Ollama Host</label>
             <input
               value={settings.ollama_host}
               onChange={(e) => setSettings((prev) => ({ ...prev, ollama_host: e.target.value }))}
               placeholder="http://localhost:11434"
-              className="w-full px-3 py-2 bg-dark-800 border border-border rounded-lg text-sm focus:outline-none focus:border-accent font-mono"
+              className="w-full px-3 py-2 bg-ink-800 border border-border rounded-lg text-sm focus:outline-none focus:border-accent font-mono"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-dark-400 mb-1.5">Ollama Model</label>
+            <label className="block text-sm text-ink-400 mb-1.5">Ollama Model</label>
             <input
               value={settings.ollama_model}
               onChange={(e) => setSettings((prev) => ({ ...prev, ollama_model: e.target.value }))}
               placeholder="llama3"
-              className="w-full px-3 py-2 bg-dark-800 border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
+              className="w-full px-3 py-2 bg-ink-800 border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
             />
           </div>
 
@@ -552,7 +558,7 @@ export function Settings() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium">Clear all applications data</p>
-            <p className="text-xs text-dark-400 mt-0.5">Permanently removes all application records</p>
+            <p className="text-xs text-ink-400 mt-0.5">Permanently removes all application records</p>
           </div>
           {confirmClear ? (
             <div className="flex items-center gap-2">
@@ -578,7 +584,7 @@ export function Settings() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium">Reset cookies</p>
-            <p className="text-xs text-dark-400 mt-0.5">Clear all saved platform session cookies</p>
+            <p className="text-xs text-ink-400 mt-0.5">Clear all saved platform session cookies</p>
           </div>
           {confirmResetCookies ? (
             <div className="flex items-center gap-2">
