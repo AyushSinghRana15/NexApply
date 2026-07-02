@@ -16,12 +16,12 @@ interface TableProps<T> {
 
 export function Table<T extends { id: number | string }>({ columns, data, onRowClick }: TableProps<T>) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-border">
+    <div className="overflow-x-auto rubik-border">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-ink-800 border-b border-border">
+          <tr className="bg-gray-100 border-b-2 border-black">
             {columns.map((col) => (
-              <th key={col.key} className={cn("text-left px-4 py-3 font-medium text-ink-400", col.className)}>
+              <th key={col.key} className={cn("text-left px-4 py-3 font-bold text-gray-500", col.className)}>
                 {col.header}
               </th>
             ))}
@@ -33,8 +33,8 @@ export function Table<T extends { id: number | string }>({ columns, data, onRowC
               key={item.id}
               onClick={() => onRowClick?.(item)}
               className={cn(
-                "border-b border-border last:border-0 transition-colors",
-                onRowClick && "cursor-pointer hover:bg-surface-hover"
+                "border-b border-black last:border-0 transition-colors",
+                onRowClick && "cursor-pointer hover:bg-gray-50"
               )}
             >
               {columns.map((col) => (
@@ -46,7 +46,7 @@ export function Table<T extends { id: number | string }>({ columns, data, onRowC
           ))}
           {data.length === 0 && (
             <tr>
-              <td colSpan={columns.length} className="px-4 py-8 text-center text-ink-500">
+              <td colSpan={columns.length} className="px-4 py-8 text-center text-gray-400">
                 No data
               </td>
             </tr>
