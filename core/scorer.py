@@ -1,5 +1,5 @@
 from typing import List
-
+import re
 
 def _word_in_text(word: str, text: str) -> bool:
     word_lower = word.lower().strip(".,;:!?\"'()[]{}")
@@ -8,7 +8,6 @@ def _word_in_text(word: str, text: str) -> bool:
     if word_lower in text:
         return True
     pattern = r'(?<![a-zA-Z])' + re.escape(word_lower) + r'(?![a-zA-Z])'
-    import re
     return bool(re.search(pattern, text))
 
 
@@ -19,7 +18,6 @@ def _keyword_match_score(keyword: str, resume_text: str) -> float:
         return 0.0
     if kw_lower in resume_lower:
         pattern = r'(?<![a-zA-Z])' + re.escape(kw_lower) + r'(?![a-zA-Z])'
-        import re
         if re.search(pattern, resume_lower):
             return 1.0
         return 0.8

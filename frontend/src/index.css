@@ -1,47 +1,58 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink-950: #0a0806;
-  --color-ink-900: #12100e;
-  --color-ink-800: #1c1814;
-  --color-ink-750: #241e18;
-  --color-ink-700: #2c241e;
-  --color-ink-600: #3d342a;
-  --color-ink-500: #5c5042;
-  --color-ink-400: #8a7c6a;
-  --color-ink-300: #b0a494;
-  --color-ink-200: #d4c9b8;
-  --color-ink-100: #ede4d6;
-  --color-ink-50: #f5f0e8;
-  --color-accent: #c04a4a;
-  --color-accent-hover: #a33a3a;
-  --color-accent-soft: #c04a4a;
-  --color-success: #4a8c5c;
-  --color-success-soft: #4a8c5c;
-  --color-warning: #b8943a;
-  --color-warning-soft: #b8943a;
-  --color-danger: #c04a4a;
-  --color-danger-soft: #c04a4a;
-  --color-surface: #1c1814;
-  --color-surface-hover: #241e18;
-  --color-border: #2c241e;
-  --color-border-light: #3d342a;
-  --color-text-primary: #ede4d6;
-  --color-text-secondary: #b0a494;
-  --color-text-muted: #8a7c6a;
+  --color-cube-white: #FFFFFF;
+  --color-cube-black: #000000;
+  --color-cube-red: #B90000;
+  --color-cube-blue: #0045AD;
+  --color-cube-orange: #FF5900;
+  --color-cube-green: #009B48;
+  --color-cube-yellow: #FFD500;
+
+  --color-bg: #F5F5F5;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #EEEEEE;
+  --color-border: #000000;
+  --color-border-light: #CCCCCC;
+  --color-text-primary: #000000;
+  --color-text-secondary: #555555;
+  --color-text-muted: #999999;
+
+  --color-accent: #0045AD;
+  --color-accent-hover: #003380;
+  --color-success: #009B48;
+  --color-warning: #FF5900;
+  --color-danger: #B90000;
+  --color-pending: #FFD500;
 }
 
 body {
   margin: 0;
-  background-color: var(--color-ink-950);
+  background-color: var(--color-bg);
   color: var(--color-text-primary);
-  font-family: "Inter", "SF Pro", "Noto Serif SC", system-ui, -apple-system, sans-serif;
+  font-family: "Inter", "SF Pro", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-ink-600) transparent;
+  scrollbar-color: #CCCCCC transparent;
+}
+
+.rubik-shadow {
+  box-shadow: 4px 4px 0px 0px #000000;
+}
+
+.rubik-shadow-sm {
+  box-shadow: 2px 2px 0px 0px #000000;
+}
+
+.rubik-border {
+  border: 2px solid #000000;
+}
+
+.rubik-border-thin {
+  border: 1.5px solid #000000;
 }
 
 @keyframes fade-in {
