@@ -23,15 +23,15 @@ export function formatDate(iso: string): string {
 }
 
 export function matchScoreColor(score: number): string {
-  if (score >= 80) return "text-green-400";
-  if (score >= 60) return "text-yellow-400";
-  return "text-red-400";
+  if (score >= 80) return "text-cube-green";
+  if (score >= 60) return "text-cube-orange";
+  return "text-cube-red";
 }
 
 export function matchScoreBarColor(score: number): string {
-  if (score >= 80) return "bg-green-500";
-  if (score >= 60) return "bg-yellow-500";
-  return "bg-red-500";
+  if (score >= 80) return "bg-cube-green";
+  if (score >= 60) return "bg-cube-orange";
+  return "bg-cube-red";
 }
 
 export function platformIcon(platform: string): string {

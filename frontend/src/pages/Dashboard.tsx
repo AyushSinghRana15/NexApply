@@ -44,41 +44,40 @@ function AgentCard({ agent }: { agent: string }) {
 
   if (!meta) return null;
 
-  const statusColor = info?.status === "online"
-    ? "bg-green-500"
-    : info?.status === "error"
-      ? "bg-yellow-500"
-      : "bg-red-500";
-
-  const label = info?.status === "online" ? "Online"
-    : info?.status === "error" ? "Error"
-      : "Offline";
+  const isOnline = info?.status === "online";
+  const isError = info?.status === "error";
 
   return (
-    <div className="bg-surface rounded-xl border border-border p-4 flex flex-col gap-3">
+    <div className="bg-white rubik-border rubik-shadow p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-ink-700 text-accent">
+          <div className={cn(
+            "p-2 rubik-border-thin",
+            isOnline ? "bg-cube-green text-white"
+              : isError ? "bg-cube-orange text-white"
+                : "bg-gray-100 text-gray-400"
+          )}>
             <meta.icon size={16} />
           </div>
           <div>
-            <p className="text-sm font-semibold">{meta.name}</p>
-            <p className="text-xs text-ink-500">{meta.role}</p>
+            <p className="text-sm font-black">{meta.name}</p>
+            <p className="text-xs font-medium text-gray-500">{meta.role}</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className={cn("w-2 h-2 rounded-full", statusColor, info?.status === "online" && "animate-pulse")} />
           <span className={cn(
-            "text-xs font-medium",
-            info?.status === "online" ? "text-green-400"
-              : info?.status === "error" ? "text-yellow-400"
-                : "text-red-400"
+            "w-3 h-3 rubik-border-thin",
+            isOnline ? "bg-cube-green" : isError ? "bg-cube-orange" : "bg-gray-200"
+          )} />
+          <span className={cn(
+            "text-xs font-bold",
+            isOnline ? "text-cube-green" : isError ? "text-cube-orange" : "text-gray-400"
           )}>
-            {label}
+            {isOnline ? "Online" : isError ? "Error" : "Offline"}
           </span>
         </div>
       </div>
-      <div className="flex items-center justify-between text-xs text-ink-400">
+      <div className="flex items-center justify-between text-xs font-medium text-gray-500 border-t-2 border-black pt-2">
         <span>{info?.jobs_today ?? 0} jobs today</span>
         <span>{info?.last_active ? formatTimeAgo(info.last_active) : "—"}</span>
       </div>
@@ -110,12 +109,12 @@ export function Dashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-ink-400 text-sm mt-1">NexApply agent pipeline overview</p>
+          <h1 className="text-2xl font-black">Dashboard</h1>
+          <p className="text-sm font-medium text-gray-500 mt-1">NexApply agent pipeline overview</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500 animate-pulse" : "bg-red-500")} />
-          <span className="text-xs text-ink-400">{isConnected ? "Live" : "Disconnected"}</span>
+          <span className={cn("w-3 h-3 rubik-border-thin", isConnected ? "bg-cube-green" : "bg-cube-red")} />
+          <span className="text-xs font-bold">{isConnected ? "Live" : "Disconnected"}</span>
         </div>
       </div>
 
@@ -133,6 +132,7 @@ export function Dashboard() {
                 label="Applied"
                 value={stats?.total_applied ?? 0}
                 icon={<Send size={20} />}
+                variant="green"
               />
             </div>
             <div className="animate-fade-in" style={{ animationDelay: "0.05s" }}>
@@ -140,6 +140,7 @@ export function Dashboard() {
                 label="Pending Review"
                 value={(stats?.total_pending ?? 0) + pendingReviews.length}
                 icon={<Clock size={20} />}
+                variant="yellow"
               />
             </div>
             <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
@@ -147,6 +148,7 @@ export function Dashboard() {
                 label="Avg Score"
                 value={stats ? `${stats.avg_match_score}%` : "—"}
                 icon={<BarChart3 size={20} />}
+                variant="blue"
               />
             </div>
             <div className="animate-fade-in" style={{ animationDelay: "0.15s" }}>
@@ -154,6 +156,7 @@ export function Dashboard() {
                 label="Response Rate"
                 value={emailStats ? `${responseRate}%` : "—"}
                 icon={<Mail size={20} />}
+                variant="orange"
               />
             </div>
           </>
@@ -161,7 +164,7 @@ export function Dashboard() {
       </div>
 
       <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
-        <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-3">Agent Status</h2>
+        <h2 className="text-sm font-black text-gray-500 uppercase tracking-wider mb-3">Agent Status</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Object.keys(agentMeta).map((key) => (
             <AgentCard key={key} agent={key} />
@@ -170,27 +173,33 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in" style={{ animationDelay: "0.15s" }}>
-          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-3">Activity Feed</h2>
-          <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1">
+        <div className="bg-white rubik-border rubik-shadow p-5 animate-fade-in" style={{ animationDelay: "0.15s" }}>
+          <h2 className="text-sm font-black text-gray-500 uppercase tracking-wider mb-3">Activity Feed</h2>
+          <div className="space-y-0 max-h-[400px] overflow-y-auto">
             {activityFeed.length === 0 && (
-              <p className="text-ink-500 text-sm text-center py-8">Waiting for activity...</p>
+              <p className="text-gray-400 text-sm text-center py-8">Waiting for activity...</p>
             )}
-            {activityFeed.slice(0, 100).map((event) => (
+            {activityFeed.slice(0, 100).map((event, i) => (
               <div
                 key={event.id}
-                className="flex items-start gap-3 py-2 px-2 rounded-lg hover:bg-surface-hover transition-colors"
+                className="flex items-start gap-3 py-3 px-2 border-b-2 border-black transition-colors hover:bg-gray-50"
               >
-                <div className="p-1.5 rounded-md bg-ink-700 mt-0.5 shrink-0">
-                  <EventIcon type={event.type} className="text-ink-400" />
+                <div className={cn(
+                  "p-1.5 rubik-border-thin shrink-0 mt-0.5",
+                  i % 4 === 0 ? "bg-cube-blue text-white"
+                    : i % 4 === 1 ? "bg-cube-green text-white"
+                      : i % 4 === 2 ? "bg-cube-orange text-white"
+                        : "bg-cube-yellow text-black"
+                )}>
+                  <EventIcon type={event.type} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-ink-300 truncate">{event.message}</p>
+                  <p className="text-sm font-bold text-black truncate">{event.message}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     {event.platform && (
-                      <span className="text-[10px] text-ink-500 uppercase">{event.platform}</span>
+                      <span className="text-[10px] font-bold text-gray-500 uppercase">{event.platform}</span>
                     )}
-                    <span className="text-[10px] text-ink-500">{formatTimeAgo(event.timestamp)}</span>
+                    <span className="text-[10px] font-medium text-gray-400">{formatTimeAgo(event.timestamp)}</span>
                   </div>
                 </div>
               </div>
@@ -198,56 +207,56 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-3">Platform Health</h2>
-          <div className="space-y-3">
+        <div className="bg-white rubik-border rubik-shadow p-5 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <h2 className="text-sm font-black text-gray-500 uppercase tracking-wider mb-3">Platform Health</h2>
+          <div className="divide-y-2 divide-black">
             {displayPlatforms.map((platform) => {
               const pCfg = configPlatforms?.[platform];
               const connected = pCfg?.cookie_valid ?? pCfg?.enabled ?? false;
               return (
                 <div
                   key={platform}
-                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-ink-800"
+                  className="flex items-center justify-between py-3"
                 >
-                  <span className="text-sm font-medium capitalize">{platform}</span>
+                  <span className="text-sm font-bold capitalize">{platform}</span>
                   {connected ? (
-                    <div className="flex items-center gap-1.5 text-green-400">
+                    <div className="flex items-center gap-1.5 text-cube-green font-bold text-xs">
                       <Check size={14} />
-                      <span className="text-xs">Connected</span>
+                      <span>Connected</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 text-ink-500">
+                    <div className="flex items-center gap-1.5 text-gray-400 font-bold text-xs">
                       <Minus size={14} />
-                      <span className="text-xs">Disabled</span>
+                      <span>Disabled</span>
                     </div>
                   )}
                 </div>
               );
             })}
             {(!config && !configPlatforms) && (
-              <p className="text-ink-500 text-sm text-center py-4">Loading platform status...</p>
+              <p className="text-gray-400 text-sm text-center py-4">Loading platform status...</p>
             )}
           </div>
         </div>
       </div>
 
-      <div className="bg-surface rounded-xl border border-border p-5 animate-fade-in" style={{ animationDelay: "0.25s" }}>
+      <div className="bg-white rubik-border rubik-shadow p-5 animate-fade-in" style={{ animationDelay: "0.25s" }}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider">Recent Applications</h2>
-          <Link to="/applications" className="text-xs text-accent hover:underline">View all</Link>
+          <h2 className="text-sm font-black text-gray-500 uppercase tracking-wider">Recent Applications</h2>
+          <Link to="/applications" className="text-xs font-bold text-cube-blue rubik-border-thin px-2 py-1 hover:bg-cube-blue hover:text-white transition-colors">View all</Link>
         </div>
         {appsLoading ? (
           <TableSkeleton rows={5} />
         ) : (
-          <div className="space-y-1">
+          <div className="divide-y-2 divide-black">
             {recentApps?.items.slice(0, 5).map((app) => (
               <div
                 key={app.id}
-                className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-surface-hover transition-colors"
+                className="flex items-center justify-between py-3 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{app.title}</p>
-                  <p className="text-xs text-ink-400">{app.company}</p>
+                  <p className="text-sm font-bold truncate">{app.title}</p>
+                  <p className="text-xs font-medium text-gray-500">{app.company}</p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-4">
                   <Badge
@@ -255,20 +264,20 @@ export function Dashboard() {
                       app.status === "APPLIED"
                         ? "success"
                         : app.status === "PENDING_REVIEW"
-                          ? "warning"
+                          ? "pending"
                           : "danger"
                     }
                   >
                     {app.status.replace("_", " ")}
                   </Badge>
-                  <span className="text-xs text-ink-500 w-14 text-right">
+                  <span className="text-xs font-medium text-gray-400 w-14 text-right">
                     {formatTimeAgo(app.created_at)}
                   </span>
                 </div>
               </div>
             ))}
             {(!recentApps?.items || recentApps.items.length === 0) && (
-              <p className="text-ink-500 text-sm text-center py-6">No applications yet</p>
+              <p className="text-gray-400 text-sm text-center py-6">No applications yet</p>
             )}
           </div>
         )}
