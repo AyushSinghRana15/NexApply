@@ -123,17 +123,29 @@ async def start_agents(config: dict, log: Logger):
     tailor_queue = JobQueue()
     guard_queue = JobQueue()
 
+    def save_application(payload, decision=""):
+        try:
+            from api.db.database import SessionLocal
+            from api.services.agent_bridge import agent_bridge
+            db = SessionLocal()
+            try:
+                agent_bridge.save_application(db, payload, decision)
+            finally:
+                db.close()
+        except Exception:
+            pass
+
     radar = RadarAgent(config, job_queue)
     broker = QueueBroker(config, job_queue, filtered_queue)
     tailor = TailorAgent(config, filtered_queue, tailor_queue)
-    fleet = ApplyFleet(config, tailor_queue, guard_queue)
+    fleet = ApplyFleet(config, tailor_queue, guard_queue, save_cb=save_application)
 
     mode = config.get("autonomy", {}).get("mode", "full")
     need_guard = mode != "full"
 
     if need_guard:
         from api.core.websocket import ws_manager as api_ws
-        guard = GuardAgent(config, guard_queue, api_ws)
+        guard = GuardAgent(config, guard_queue, api_ws, save_cb=save_application)
         asyncio.create_task(guard.start())
         log.start("GuardAgent started — supervising applications")
     else:

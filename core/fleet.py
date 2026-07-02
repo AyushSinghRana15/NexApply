@@ -14,11 +14,12 @@ LOGS_FILE = "logs/applications.jsonl"
 
 class ApplyFleet:
 
-    def __init__(self, config: dict, input_queue: JobQueue, output_queue: JobQueue):
+    def __init__(self, config: dict, input_queue: JobQueue, output_queue: JobQueue, save_cb=None):
         self.cfg = config
         self.input_queue = input_queue
         self.output_queue = output_queue
         self.log = Logger()
+        self._save_cb = save_cb
         self._fleet_cfg = config.get("fleet", {})
         self._semaphore = asyncio.Semaphore(
             self._fleet_cfg.get("max_concurrent_browsers", 3)
@@ -220,6 +221,8 @@ class ApplyFleet:
         os.makedirs(os.path.dirname(LOGS_FILE), exist_ok=True)
         with open(LOGS_FILE, "a") as f:
             f.write(payload.to_jsonl() + "\n")
+        if self._save_cb:
+            self._save_cb(payload)
 
     def _log_application_raw(self, result: TailoredResult, decision: str):
         entry = {
@@ -238,6 +241,19 @@ class ApplyFleet:
         os.makedirs(os.path.dirname(LOGS_FILE), exist_ok=True)
         with open(LOGS_FILE, "a") as f:
             f.write(json.dumps(entry, default=str) + "\n")
+        if self._save_cb:
+            payload = ApplicationPayload(
+                job_id=result.job_id,
+                platform=result.platform,
+                title=result.title,
+                company=result.company,
+                apply_url=result.apply_url,
+                match_score=result.match_score,
+                keywords_injected=result.keywords_injected,
+                resume_variant=result.resume_variant,
+                status=decision,
+            )
+            self._save_cb(payload, decision)
 
     async def _heartbeat(self):
         while True:

@@ -38,11 +38,12 @@ class WSManager:
 
 class GuardAgent:
 
-    def __init__(self, config: dict, input_queue: JobQueue, ws_manager: WSManager):
+    def __init__(self, config: dict, input_queue: JobQueue, ws_manager: WSManager, save_cb=None):
         self.cfg = config
         self.input_queue = input_queue
         self.ws_manager = ws_manager
         self.log = Logger()
+        self._save_cb = save_cb
         self._pending: Dict[str, ApplicationPayload] = {}
         self._guard_cfg = config.get("guard", {})
         self._review_timeout = self._guard_cfg.get("review_timeout_seconds", 300)
@@ -176,6 +177,8 @@ class GuardAgent:
         }
         with open(LOGS_FILE, "a") as f:
             f.write(json.dumps(entry, default=str) + "\n")
+        if self._save_cb:
+            self._save_cb(payload, action)
 
     async def _heartbeat(self):
         while True:

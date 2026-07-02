@@ -1,4 +1,3 @@
-import json
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -65,9 +64,9 @@ class AgentBridge:
             company=payload.company,
             match_score=payload.match_score,
             resume_variant=payload.resume_variant,
-            keywords_injected=json.dumps(payload.keywords_injected),
+            keywords_injected=payload.keywords_injected,
             screenshot_path=payload.screenshot_path,
-            form_data=json.dumps(payload.form_data_used),
+            form_data=payload.form_data_used,
             status=payload.status,
             decision=decision or payload.decision,
             decided_at=datetime.now(timezone.utc).isoformat() if decision else "",
