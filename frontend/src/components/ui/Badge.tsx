@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 interface BadgeProps {
   children: ReactNode;
-  variant?: "default" | "success" | "warning" | "danger";
+  variant?: "default" | "success" | "warning" | "danger" | "pending";
   className?: string;
 }
 
@@ -11,11 +11,12 @@ export function Badge({ children, variant = "default", className }: BadgeProps) 
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-        variant === "default" && "bg-ink-700 text-ink-300",
-        variant === "success" && "bg-green-500/10 text-green-400",
-        variant === "warning" && "bg-yellow-500/10 text-yellow-400",
-        variant === "danger" && "bg-red-500/10 text-red-400",
+        "inline-flex items-center px-2.5 py-0.5 text-xs font-bold rubik-border-thin uppercase tracking-wider",
+        variant === "default" && "bg-gray-100 text-black",
+        variant === "success" && "bg-cube-green text-white",
+        variant === "warning" && "bg-cube-orange text-white",
+        variant === "danger" && "bg-cube-red text-white",
+        variant === "pending" && "bg-cube-yellow text-black",
         className
       )}
     >
