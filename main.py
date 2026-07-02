@@ -8,6 +8,7 @@ from datetime import time as dt_time
 import yaml
 
 from core.autonomous import AutonomousAgent
+from core.broker import QueueBroker
 from core.fleet import ApplyFleet
 from core.guard import GuardAgent, WSManager
 from core.logger import Logger
@@ -108,6 +109,7 @@ async def main():
         }
 
     job_queue = JobQueue()
+    filtered_queue = JobQueue()
     tailor_queue = JobQueue()
     guard_queue = JobQueue()
 
@@ -117,7 +119,8 @@ async def main():
     dashboard = DashboardServer(ws_manager, guard, port=dashboard_port)
 
     radar = RadarAgent(config, job_queue)
-    tailor = TailorAgent(config, job_queue, tailor_queue)
+    broker = QueueBroker(config, job_queue, filtered_queue)
+    tailor = TailorAgent(config, filtered_queue, tailor_queue)
     fleet = ApplyFleet(config, tailor_queue, guard_queue)
 
     asyncio.create_task(dashboard.start())
@@ -130,6 +133,7 @@ async def main():
         log.start("Autonomous mode — GuardAgent bypassed")
 
     radar_task = asyncio.create_task(radar.start())
+    broker_task = asyncio.create_task(broker.start())
     tailor_task = asyncio.create_task(tailor.start())
     fleet_task = asyncio.create_task(fleet.start())
     guard_task = asyncio.create_task(guard.start())
@@ -182,7 +186,7 @@ async def main():
             await guard_queue.enqueue(fake)
             log.detail("Test payload injected into guard_queue")
 
-    await asyncio.gather(radar_task, tailor_task, fleet_task, guard_task, watchdog_task)
+    await asyncio.gather(radar_task, broker_task, tailor_task, fleet_task, guard_task, watchdog_task)
 
 
 if __name__ == "__main__":

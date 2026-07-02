@@ -3,17 +3,24 @@ import json
 import os
 import random
 import tempfile
+import time
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Dict, List, Optional
 
 import yaml
-from playwright.async_api import async_playwright, Page, BrowserContext
+from playwright.async_api import async_playwright, Page, BrowserContext, TimeoutError as PlaywrightTimeout
 
 from core.logger import Logger
 from core.models import ApplicationPayload, TailoredResult
 
 SCREENSHOTS_DIR = "logs/screenshots"
 COOKIES_DIR = "cookies"
+ERROR_LOG = "logs/errors.log"
+
+MAX_NAVIGATION_RETRIES = 3
+NAV_RETRY_DELAY_SECONDS = 3
+PAGE_NAVIGATION_TIMEOUT = 30000
 
 
 FIELD_MAPPING = {
@@ -289,13 +296,64 @@ class BaseWorker:
         hi = self._fleet_cfg.get("human_delay_max", 0.8)
         return random.uniform(lo, hi)
 
-    async def launch(self):
+    def _log_worker_error(self, platform: str, action: str, url: str, message: str, detail: str = ""):
+        os.makedirs(os.path.dirname(ERROR_LOG), exist_ok=True)
+        try:
+            entry = {
+                "type": "worker_error",
+                "platform": platform,
+                "action": action,
+                "url": url,
+                "error": message,
+                "detail": detail[:500] if detail else "",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            with open(ERROR_LOG, "a") as f:
+                f.write(json.dumps(entry, default=str) + "\n")
+        except Exception:
+            pass
+
+    async def navigate_with_retry(self, url: str, platform: str = "", timeout: int = PAGE_NAVIGATION_TIMEOUT) -> bool:
+        last_error = ""
+        for attempt in range(1, MAX_NAVIGATION_RETRIES + 1):
+            try:
+                await self.page.goto(url, timeout=timeout, wait_until="domcontentloaded")
+                return True
+            except PlaywrightTimeout as e:
+                last_error = f"timeout on attempt {attempt}/{MAX_NAVIGATION_RETRIES}: {e}"
+                self.log.warn(f"Navigation timeout for {url} (attempt {attempt})")
+                self._log_worker_error(platform, "navigate", url, last_error)
+                if attempt < MAX_NAVIGATION_RETRIES:
+                    await asyncio.sleep(NAV_RETRY_DELAY_SECONDS)
+            except Exception as e:
+                last_error = f"error on attempt {attempt}/{MAX_NAVIGATION_RETRIES}: {e}"
+                self.log.warn(f"Navigation failed for {url} (attempt {attempt}): {e}")
+                self._log_worker_error(platform, "navigate", url, last_error)
+                if attempt < MAX_NAVIGATION_RETRIES:
+                    await asyncio.sleep(NAV_RETRY_DELAY_SECONDS)
+
+        self.log.error(f"Navigation failed after {MAX_NAVIGATION_RETRIES} attempts: {url}")
+        self._log_worker_error(platform, "navigate_final", url, last_error)
+        return False
+
+    async def launch(self, platform: str = ""):
         headless = self._fleet_cfg.get("headless", True)
         self._playwright = await async_playwright().start()
-        self.browser = await self._playwright.chromium.launch(headless=headless)
+        self.browser = await self._playwright.chromium.launch(
+            headless=headless,
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+            ],
+        )
         self.context = await self.browser.new_context(
             viewport={"width": 1280, "height": 900},
+            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         )
+        if platform:
+            profile_dir = os.path.join("browser_profiles", platform)
+            os.makedirs(profile_dir, exist_ok=True)
         self.page = await self.context.new_page()
         self.page.set_default_timeout(
             self._fleet_cfg.get("page_timeout_seconds", 30) * 1000
@@ -523,3 +581,29 @@ class BaseWorker:
 
     async def apply(self, result: TailoredResult) -> Optional[ApplicationPayload]:
         raise NotImplementedError("Subclass must implement apply()")
+
+    async def apply_with_timeout(self, result: TailoredResult, auto_submit: bool = False, timeout_seconds: int = 60) -> Optional[ApplicationPayload]:
+        try:
+            return await asyncio.wait_for(
+                self.apply(result, auto_submit=auto_submit),
+                timeout=timeout_seconds,
+            )
+        except asyncio.TimeoutError:
+            self.log.error(f"Worker apply timed out after {timeout_seconds}s for {result.title} @ {result.company}")
+            self._log_worker_error(
+                result.platform, "apply_timeout",
+                result.apply_url,
+                f"Timed out after {timeout_seconds}s",
+                f"{result.title} @ {result.company}",
+            )
+            return ApplicationPayload(
+                job_id=result.job_id,
+                platform=result.platform,
+                title=result.title,
+                company=result.company,
+                apply_url=result.apply_url,
+                match_score=result.match_score,
+                keywords_injected=result.keywords_injected,
+                resume_variant=result.resume_variant,
+                status=ApplicationPayload.STATUS_FAILED,
+            )

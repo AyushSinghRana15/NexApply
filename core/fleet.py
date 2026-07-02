@@ -117,7 +117,7 @@ class ApplyFleet:
             auto_submit = self._mode == "full"
 
             try:
-                payload = await worker.apply(result, auto_submit=auto_submit)
+                payload = await worker.apply_with_timeout(result, auto_submit=auto_submit)
             except Exception as e:
                 self.log.error(f"Worker failed for {platform}: {e}")
                 payload = ApplicationPayload(

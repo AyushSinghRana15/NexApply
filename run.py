@@ -10,6 +10,7 @@ import yaml
 
 from api.main import app
 from core.autonomous import AutonomousAgent
+from core.broker import QueueBroker
 from core.fleet import ApplyFleet
 from core.guard import GuardAgent
 from core.logger import Logger
@@ -118,11 +119,13 @@ def _count_recent_failures(window_minutes: int = 10) -> int:
 
 async def start_agents(config: dict, log: Logger):
     job_queue = JobQueue()
+    filtered_queue = JobQueue()
     tailor_queue = JobQueue()
     guard_queue = JobQueue()
 
     radar = RadarAgent(config, job_queue)
-    tailor = TailorAgent(config, job_queue, tailor_queue)
+    broker = QueueBroker(config, job_queue, filtered_queue)
+    tailor = TailorAgent(config, filtered_queue, tailor_queue)
     fleet = ApplyFleet(config, tailor_queue, guard_queue)
 
     mode = config.get("autonomy", {}).get("mode", "full")
@@ -137,6 +140,7 @@ async def start_agents(config: dict, log: Logger):
         log.start("GuardAgent bypassed — fully autonomous mode")
 
     asyncio.create_task(radar.start())
+    asyncio.create_task(broker.start())
     asyncio.create_task(tailor.start())
     asyncio.create_task(fleet.start())
     log.start("Agent pipeline started")
@@ -307,7 +311,9 @@ async def main():
 
     log.start("NexApply ready")
 
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="error")
+    config_uv = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="error")
+    server = uvicorn.Server(config_uv)
+    await server.serve()
 
 
 if __name__ == "__main__":
