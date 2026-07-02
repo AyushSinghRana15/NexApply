@@ -1,9 +1,10 @@
 import asyncio
 import hashlib
+import json
+import os
+import re
 from datetime import datetime, timezone
 from typing import Optional, Set
-
-import feedparser
 
 from core.logger import Logger
 from core.models import JobEvent
@@ -22,6 +23,33 @@ try:
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
     pass
+
+AIOHTTP_AVAILABLE = False
+try:
+    import aiohttp
+    AIOHTTP_AVAILABLE = True
+except ImportError:
+    pass
+
+ERROR_LOG = "logs/errors.log"
+
+
+def _log_error(platform: str, url: str, selector: str, message: str, detail: str = ""):
+    os.makedirs(os.path.dirname(ERROR_LOG), exist_ok=True)
+    try:
+        entry = {
+            "type": "scraper_error",
+            "platform": platform,
+            "url": url,
+            "selector": selector,
+            "error": message,
+            "detail": detail,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        with open(ERROR_LOG, "a") as f:
+            f.write(json.dumps(entry, default=str) + "\n")
+    except Exception:
+        pass
 
 
 class RadarAgent:
@@ -84,6 +112,10 @@ class RadarAgent:
 
     async def _emit_job(self, platform: str, title: str, company: str, location: str,
                         description: str, apply_url: str, posted_at: str):
+        if not title or title.strip() == "Unknown":
+            return
+        if not company or company.strip() == "Unknown":
+            company = platform.capitalize()
         if await self._is_seen(apply_url):
             self.log.skip(platform, title, "already seen")
             self._skipped_count += 1
@@ -91,15 +123,15 @@ class RadarAgent:
 
         event = JobEvent(
             platform=platform,
-            title=title,
-            company=company,
-            location=location,
+            title=title.strip(),
+            company=company.strip(),
+            location=location.strip() or "Remote",
             description=description[:500],
             apply_url=apply_url,
             posted_at=posted_at,
         )
         await self._mark_seen(apply_url)
-        self.log.new_job(platform, f"{title} @ {company}", self._relative_time(None))
+        self.log.new_job(platform, f"{event.title} @ {event.company}", self._relative_time(None))
         self.log.queued(event.job_id, platform)
         await self.queue.enqueue(event)
 
@@ -110,8 +142,7 @@ class RadarAgent:
             self.log.heartbeat(self.queue.qsize(), seen, self._skipped_count)
 
     async def start(self):
-        """Launch all platform watchers + heartbeat."""
-        self.log.start("RadarAgent started — watching 4 platforms")
+        self.log.start("RadarAgent started — watching platforms")
         await self._init_redis()
 
         platforms = self.cfg.get("platforms", {})
@@ -138,113 +169,225 @@ class RadarAgent:
 
         await asyncio.gather(*tasks, return_exceptions=True)
 
+    def _get_search_queries(self, platform: str, default: list) -> list:
+        queries = self.cfg.get("search_queries", {}).get(platform, default)
+        if isinstance(queries, str):
+            queries = [queries]
+        return queries if queries else default
+
+    async def _scrape_with_playwright(self, url: str, platform: str, card_selector: str,
+                                       title_selectors: list, company_selectors: list,
+                                       link_selectors: list, location_selectors: list,
+                                       max_jobs: int = 10) -> list:
+        if not PLAYWRIGHT_AVAILABLE:
+            self.log.warn(f"playwright not installed — {platform} scraper disabled")
+            return []
+
+        results = []
+        try:
+            async with async_playwright() as pw:
+                browser = await pw.chromium.launch(headless=True)
+                context = await browser.new_context(
+                    user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    viewport={"width": 1280, "height": 900},
+                )
+                page = await context.new_page()
+                page.set_default_timeout(20000)
+                try:
+                    await page.goto(url, timeout=20000, wait_until="domcontentloaded")
+                    await page.wait_for_timeout(4000)
+
+                    if "login" in page.url.lower() or "signin" in page.url.lower():
+                        self.log.warn(f"{platform} login wall detected — skipping scrape")
+                        await browser.close()
+                        return results
+
+                    cards = await page.query_selector_all(card_selector)
+                    self.log.detail(f"{platform}: found {len(cards)} job cards via '{card_selector}'")
+                    _log_error(platform, url, card_selector,
+                               f"found {len(cards)} cards", "")
+
+                    for card in cards[:max_jobs]:
+                        try:
+                            title = await self._extract_text(card, title_selectors)
+                            company = await self._extract_text(card, company_selectors)
+                            link = await self._extract_href(card, link_selectors)
+                            location = await self._extract_text(card, location_selectors)
+
+                            if title and link:
+                                if link and not link.startswith("http"):
+                                    domain = platform
+                                    link = f"https://www.{domain}.com" + link
+                                results.append({
+                                    "title": title.strip(),
+                                    "company": company.strip() if company else platform.capitalize(),
+                                    "location": location.strip() if location else "Remote",
+                                    "apply_url": link,
+                                    "description": f"{title} at {company}",
+                                })
+                        except Exception as e:
+                            _log_error(platform, url, card_selector,
+                                       f"card parse error: {e}", "")
+                            continue
+
+                except Exception as e:
+                    self.log.warn(f"{platform} scrape failed: {e}")
+                    _log_error(platform, url, card_selector,
+                               f"scrape failed: {e}", str(e)[:200])
+                finally:
+                    await browser.close()
+        except Exception as e:
+            self.log.error(f"{platform} watcher error: {e}")
+            _log_error(platform, url, card_selector,
+                       f"watcher error: {e}", str(e)[:200])
+
+        return results
+
+    async def _extract_text(self, card, selectors: list) -> str:
+        for sel in selectors:
+            try:
+                el = await card.query_selector(sel)
+                if el:
+                    text = await el.inner_text()
+                    if text and text.strip():
+                        return text.strip()
+            except Exception:
+                continue
+        return ""
+
+    async def _extract_href(self, card, selectors: list) -> str:
+        for sel in selectors:
+            try:
+                el = await card.query_selector(sel)
+                if el:
+                    href = await el.get_attribute("href")
+                    if href:
+                        return href.strip()
+            except Exception:
+                continue
+        return ""
+
     async def _watch_indeed(self):
-        self.log.feed("Indeed feed connected — polling every 30s")
+        queries = self._get_search_queries("indeed", ["software engineer remote"])
+        self.log.feed(f"Indeed scraper started — {len(queries)} search queries")
+
+        selectors = {
+            "card": ".card, .jobCard, .job_seen_beacon, .result, .job-row, div[data-jk], .tapItem",
+            "title": ["a.jobtitle", "a[id*='jobtitle']", "h2.jobTitle a", "a[data-jk]", "span[title]"],
+            "company": ["span.companyName", ".company", "[data-testid*='company']", ".company_location"],
+            "location": [".companyLocation", "div.location", "[data-testid*='location']"],
+            "link": ["a.jobtitle", "a[id*='jobtitle']", "h2.jobTitle a", "a[data-jk]"],
+        }
+
         while True:
             try:
-                url = "https://in.indeed.com/rss?q=software+engineer&l=remote"
-                feed = feedparser.parse(url)
-                for entry in feed.entries:
-                    title = entry.get("title", "Unknown Title")
-                    company = entry.get("source", {}).get("title", "Unknown Company") if hasattr(entry, "source") else "Unknown Company"
-                    summary = entry.get("summary", "")
-                    location = "Remote"
-                    desc = summary
-                    link = entry.get("link", "")
-                    posted = entry.get("published", "")
-                    await self._emit_job("indeed", title, company, location, desc, link, posted)
+                for query in queries:
+                    search_q = query.replace(" ", "+")
+                    url = f"https://in.indeed.com/jobs?q={search_q}&l=remote"
+
+                    jobs = await self._scrape_with_playwright(
+                        url, "indeed", selectors["card"],
+                        selectors["title"], selectors["company"],
+                        selectors["link"], selectors["location"],
+                    )
+                    for job in jobs:
+                        await self._emit_job(
+                            "indeed", job["title"], job["company"],
+                            job["location"], job["description"],
+                            job["apply_url"], "",
+                        )
+
+                    await asyncio.sleep(5)
+
             except Exception as e:
                 self.log.error(f"Indeed watcher error: {e}")
+                _log_error("indeed", "", "", f"watcher error: {e}", str(e)[:200])
             await asyncio.sleep(self._interval)
 
     async def _watch_naukri(self):
-        self.log.scraper("Naukri scraper initialized")
         if not PLAYWRIGHT_AVAILABLE:
             self.log.warn("playwright not installed — Naukri scraper disabled")
             return
+
+        queries = self._get_search_queries("naukri", ["python-developer-jobs"])
+        self.log.feed(f"Naukri scraper started — {len(queries)} search queries")
+
+        selectors = {
+            "card": ".srp-jobtuple-wrapper, .cust-job-tuple, .jobTuple, "
+                    "div[class*='jobTuple'], .job-card, article.job, "
+                    ".job-listing, li[class*='job'], .widget",
+            "title": ["a.title", "a[class*='title']", "a[class*='jobTitle']"],
+            "company": ["a.subTitle", "a[class*='subTitle']", ".company-name", "span[class*='company']"],
+            "link": ["a.title", "a[class*='title']"],
+            "location": [],
+        }
+
         while True:
             try:
-                async with async_playwright() as pw:
-                    browser = await pw.chromium.launch(headless=True)
-                    page = await browser.new_page()
-                    try:
-                        await page.goto("https://www.naukri.com/python-developer-jobs", timeout=15000)
-                        await page.wait_for_timeout(3000)
-                        if "login" in page.url.lower() or "signin" in page.url.lower():
-                            self.log.warn("Naukri login wall detected — skipping scrape")
-                            await browser.close()
-                            await asyncio.sleep(self._interval)
-                            continue
-                        cards = await page.query_selector_all(".jobTuple, .info, .job-card")
-                        self.log.detail(f"Naukri: found {len(cards)} job cards")
-                        for card in cards[:10]:
-                            try:
-                                title_el = await card.query_selector("a.title, .title a")
-                                title = await title_el.inner_text() if title_el else "Unknown"
-                                company_el = await card.query_selector("a.subTitle, .subTitle")
-                                company = await company_el.inner_text() if company_el else "Unknown"
-                                link_el = await card.query_selector("a.title")
-                                link = await link_el.get_attribute("href") if link_el else ""
-                                if link and not link.startswith("http"):
-                                    link = "https://www.naukri.com" + link
-                                desc = f"{title} at {company}"
-                                await self._emit_job("naukri", title.strip(), company.strip(),
-                                                     "India", desc, link, "")
-                            except Exception:
-                                continue
-                    except Exception as e:
-                        self.log.warn(f"Naukri scrape failed: {e}")
-                    await browser.close()
+                for query in queries:
+                    url = f"https://www.naukri.com/{query}"
+
+                    jobs = await self._scrape_with_playwright(
+                        url, "naukri", selectors["card"],
+                        selectors["title"], selectors["company"],
+                        selectors["link"], selectors["location"],
+                    )
+                    for job in jobs:
+                        await self._emit_job(
+                            "naukri", job["title"], job["company"],
+                            job["location"], job["description"],
+                            job["apply_url"], "",
+                        )
+
+                    await asyncio.sleep(5)
+
             except Exception as e:
                 self.log.error(f"Naukri watcher error: {e}")
+                _log_error("naukri", "", "", f"watcher error: {e}", str(e)[:200])
             await asyncio.sleep(self._interval)
 
     async def _watch_internshala(self):
-        self.log.scraper("Internshala scraper initialized")
         if not PLAYWRIGHT_AVAILABLE:
             self.log.warn("playwright not installed — Internshala scraper disabled")
             return
+
+        queries = self._get_search_queries("internshala", ["python internship"])
+        self.log.feed(f"Internshala scraper started — {len(queries)} search queries")
+
+        selectors = {
+            "card": ".individual_internship, div[class*='internship'], "
+                    ".internship-card, .card, li[class*='internship']",
+            "title": ["h2.job-internship-name a.job-title-href", "a[class*='title']",
+                      "a.job-title-href", "h2 a"],
+            "company": [".internship_logo img", "a[class*='company']",
+                        ".company-name", ".company"],
+            "location": [".locations", ".row-1-item.locations",
+                         "a[class*='location']", ".location"],
+            "link": ["h2.job-internship-name a.job-title-href",
+                     "a.job-title-href", "a[class*='title']"],
+        }
+
         while True:
             try:
-                async with async_playwright() as pw:
-                    browser = await pw.chromium.launch(headless=True)
-                    page = await browser.new_page()
-                    try:
-                        await page.goto("https://internshala.com/internships/python%20internship", timeout=15000)
-                        await page.wait_for_timeout(3000)
-                        if "login" in page.url.lower() or "register" in page.url.lower():
-                            self.log.warn("Internshala login wall detected — skipping scrape")
-                            await browser.close()
-                            await asyncio.sleep(self._interval)
-                            continue
-                        cards = await page.query_selector_all(".individual_internship")
-                        self.log.detail(f"Internshala: found {len(cards)} internship cards")
-                        for card in cards[:10]:
-                            try:
-                                title_el = await card.query_selector("h2.job-internship-name a.job-title-href")
-                                title = await title_el.inner_text() if title_el else "Unknown"
-                                title = title.strip()
+                for query in queries:
+                    search_q = query.replace(" ", "%20")
+                    url = f"https://internshala.com/internships/{search_q}"
 
-                                logo_el = await card.query_selector(".internship_logo img")
-                                company = await logo_el.get_attribute("alt") if logo_el else "Unknown"
+                    jobs = await self._scrape_with_playwright(
+                        url, "internshala", selectors["card"],
+                        selectors["title"], selectors["company"],
+                        selectors["link"], selectors["location"],
+                    )
+                    for job in jobs:
+                        await self._emit_job(
+                            "internshala", job["title"], job["company"],
+                            job["location"], job["description"],
+                            job["apply_url"], "",
+                        )
 
-                                link_el = title_el
-                                link = await link_el.get_attribute("href") if link_el else ""
-                                if link and not link.startswith("http"):
-                                    link = "https://internshala.com" + link
+                    await asyncio.sleep(5)
 
-                                location_el = await card.query_selector(".locations, .row-1-item.locations")
-                                location = await location_el.inner_text() if location_el else "Remote"
-                                location = location.strip()
-
-                                desc = f"{title} at {company}"
-                                await self._emit_job("internshala", title.strip(), company.strip(),
-                                                     location, desc, link, "")
-                            except Exception:
-                                continue
-                    except Exception as e:
-                        self.log.warn(f"Internshala scrape failed: {e}")
-                    await browser.close()
             except Exception as e:
                 self.log.error(f"Internshala watcher error: {e}")
+                _log_error("internshala", "", "", f"watcher error: {e}", str(e)[:200])
             await asyncio.sleep(self._interval)

@@ -26,12 +26,70 @@ indeed:
     - textarea[name="cover_letter"]
     - textarea[placeholder*="cover"]
     - textarea[id*="cover"]
+  job_card: &indeed_cards
+    - .card
+    - .jobCard
+    - .job_seen_beacon
+    - .result
+    - .job-row
+    - div[data-jk]
+    - .tapItem
+    - a[id*="job_"]
+  job_title: &indeed_title
+    - a.jobtitle
+    - a[id*="jobtitle"]
+    - h2.jobTitle a
+    - a[data-jk]
+    - span[title]
+  job_company: &indeed_company
+    - span.companyName
+    - .company
+    - [data-testid*="company"]
+    - .company_location
+  job_location: &indeed_location
+    - .companyLocation
+    - div.location
+    - [data-testid*="location"]
+  job_link: &indeed_link
+    - a.jobtitle
+    - a[id*="jobtitle"]
+    - h2.jobTitle a
+    - a[data-jk]
+  job_description: &indeed_desc
+    - .job-snippet
+    - .summary
+    - div[class*="description"]
+    - .jobsearch-JobComponent-description
 
 naukri:
+  job_card: &naukri_cards
+    - .srp-jobtuple-wrapper
+    - .cust-job-tuple
+    - .jobTuple
+    - div[class*="jobTuple"]
+    - .job-card
+    - article.job
+    - .job-listing
+    - li[class*="job"]
+    - .widget
+  job_title: &naukri_title
+    - a.title
+    - a[class*="title"]
+    - a[class*="jobTitle"]
+  job_company: &naukri_company
+    - a.subTitle
+    - a[class*="subTitle"]
+    - .company-name
+    - span[class*="company"]
+  job_link: &naukri_link
+    - a.title
+    - a[class*="title"]
   apply_button:
     - button:has-text("Apply")
     - button[class*="apply"]
     - a[class*="apply"]
+    - button:has-text("Easy Apply")
+    - button:has-text("Register & Apply")
   cover_letter:
     - textarea[class*="cover"]
     - textarea[id*="cover"]
@@ -52,10 +110,36 @@ naukri:
     - button:has-text("Send")
     - button:has-text("Apply")
     - button[type="submit"]
+    - button:has-text("Submit")
   resume_upload:
     - input[type="file"]
 
 internshala:
+  job_card: &internshala_cards
+    - .individual_internship
+    - div[class*="internship"]
+    - .internship-card
+    - .card
+    - li[class*="internship"]
+  job_title: &internshala_title
+    - h2.job-internship-name a.job-title-href
+    - a[class*="title"]
+    - a.job-title-href
+    - h2 a
+  job_company: &internshala_company
+    - .internship_logo img
+    - a[class*="company"]
+    - .company-name
+    - .company
+  job_location: &internshala_location
+    - .locations
+    - .row-1-item.locations
+    - a[class*="location"]
+    - .location
+  job_link: &internshala_link
+    - h2.job-internship-name a.job-title-href
+    - a.job-title-href
+    - a[class*="title"]
   cover_letter:
     - textarea[name="cover_letter"]
     - textarea[class*="cover"]
@@ -69,11 +153,4 @@ internshala:
   submit_button:
     - button:has-text("Submit")
     - button[type="submit"]
-  job_title:
-    - h2.job-internship-name a.job-title-href
-    - a[class*="title"]
-  company_name:
-    - .internship_logo img
-  location:
-    - .locations
-    - .row-1-item.locations
+    - button:has-text("Apply Now")

@@ -7,13 +7,29 @@ platforms:
 
 polling_interval_seconds: 30
 
+search_queries:
+  indeed:
+    - "software engineer remote"
+    - "backend developer remote"
+    - "python developer remote"
+    - "sde remote"
+  naukri:
+    - "python-developer-jobs"
+    - "software-engineer-jobs"
+    - "backend-developer-jobs"
+  internshala:
+    - "python internship"
+    - "software development internship"
+    - "backend internship"
+
 filters:
-  titles: ["Software Engineer", "Backend Developer", "SDE", "Python Developer"]
-  locations: ["Remote", "Delhi", "Bangalore", "Mumbai"]
-  exclude_keywords: ["10+ years", "only C++"]
+  titles: ["Software Engineer", "Backend Developer", "SDE", "Python Developer", "Full Stack Developer", "Frontend Developer"]
+  locations: ["Remote", "Delhi", "Bangalore", "Mumbai", "Pune", "Hyderabad", "Gurgaon", "Noida"]
+  exclude_keywords: ["10+ years", "only C++", "internship"]
+
 
 tailor:
-  min_match_score: 60
+  min_match_score: 70
   groq_model: "llama-3.3-70b-versatile"
   ollama_model: "mistral"
   ollama_host: "http://localhost:11434"
