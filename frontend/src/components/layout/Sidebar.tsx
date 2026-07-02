@@ -28,22 +28,22 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-50 w-60 bg-ink-900 border-r border-border transform transition-transform duration-300 lg:relative lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 w-60 bg-white rubik-border transform transition-transform duration-300 lg:relative lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}
     >
-      <div className="flex items-center justify-between h-16 px-6 border-b border-border">
-        <span className="text-lg font-bold tracking-tight">
-          Nex<span className="text-accent">Apply</span>
+      <div className="flex items-center justify-between h-16 px-6 border-b-2 border-black">
+        <span className="text-lg font-black tracking-tight">
+          Nex<span className="text-cube-blue">Apply</span>
         </span>
         <button
           onClick={toggleSidebar}
-          className="lg:hidden text-ink-400 hover:text-text-primary"
+          className="lg:hidden text-black hover:text-cube-red"
         >
           <X size={20} />
         </button>
       </div>
-      <nav className="p-4 space-y-1">
+      <nav className="p-3 space-y-1">
         {links.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
@@ -51,10 +51,10 @@ export function Sidebar() {
             end={to === "/"}
             className={({ isActive }) =>
               cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "flex items-center gap-3 px-3 py-2.5 text-sm font-bold rubik-border-thin transition-all duration-100",
                 isActive
-                  ? "bg-accent/10 text-accent border-r-2 border-accent"
-                  : "text-ink-400 hover:text-text-primary hover:bg-surface-hover"
+                  ? "bg-cube-yellow text-black rubik-shadow-sm"
+                  : "bg-white text-black hover:bg-gray-100 hover:translate-x-0.5"
               )
             }
           >
