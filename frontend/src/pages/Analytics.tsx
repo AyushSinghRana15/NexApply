@@ -133,7 +133,7 @@ export function Analytics() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Analytics</h1>
-        <p className="text-ink-400 text-sm mt-1">Detailed pipeline statistics and trends</p>
+        <p className="text-gray-500 text-sm mt-1">Detailed pipeline statistics and trends</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -149,7 +149,7 @@ export function Analytics() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-4">Applications Timeline</h2>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Applications Timeline</h2>
           {timelineData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={timelineData}>
@@ -163,12 +163,12 @@ export function Analytics() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-ink-500 text-sm text-center py-12">No data yet</p>
+            <p className="text-gray-400 text-sm text-center py-12">No data yet</p>
           )}
         </div>
 
         <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-4">Platform Breakdown</h2>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Platform Breakdown</h2>
           {platformData.length > 0 ? (
             <div className="relative">
               <ResponsiveContainer width="100%" height={300}>
@@ -191,7 +191,7 @@ export function Analytics() {
               </ResponsiveContainer>
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center">
                 <p className="text-2xl font-bold text-text-primary">{totalPlatformCount}</p>
-                <p className="text-[10px] text-ink-500">Total</p>
+                <p className="text-[10px] text-gray-400">Total</p>
               </div>
               <div className="flex justify-center gap-6 mt-2">
                 {platformData.map((entry) => (
@@ -200,19 +200,19 @@ export function Analytics() {
                       className="w-2.5 h-2.5 rounded-full"
                       style={{ background: PLATFORM_COLORS[entry.name] ?? "#8a7c6a" }}
                     />
-                    <span className="text-ink-400">{entry.name}</span>
+                    <span className="text-gray-500">{entry.name}</span>
                     <span className="font-medium text-text-primary">{entry.value}</span>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <p className="text-ink-500 text-sm text-center py-12">No data yet</p>
+            <p className="text-gray-400 text-sm text-center py-12">No data yet</p>
           )}
         </div>
 
         <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-4">Match Score Distribution</h2>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Match Score Distribution</h2>
           {scoreBuckets.some((b) => b.count > 0) ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={scoreBuckets}>
@@ -228,12 +228,12 @@ export function Analytics() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-ink-500 text-sm text-center py-12">No data yet</p>
+            <p className="text-gray-400 text-sm text-center py-12">No data yet</p>
           )}
         </div>
 
         <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wider mb-4">Decision Speed</h2>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Decision Speed</h2>
           {decisionSpeedData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={decisionSpeedData}>
@@ -257,7 +257,7 @@ export function Analytics() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-ink-500 text-sm text-center py-12">No data yet</p>
+            <p className="text-gray-400 text-sm text-center py-12">No data yet</p>
           )}
         </div>
       </div>

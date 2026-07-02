@@ -23,7 +23,7 @@ const DATE_RANGES = [
 
 const STATUS_STYLES: Record<string, string> = {
   APPLIED: "bg-green-500/10 text-green-400",
-  SKIPPED: "bg-ink-700 text-ink-400",
+  SKIPPED: "bg-gray-200 text-gray-500",
   TIMEOUT: "bg-yellow-500/10 text-yellow-400",
   FAILED: "bg-red-500/10 text-red-400",
   PENDING_REVIEW: "bg-blue-500/10 text-blue-400",
@@ -152,7 +152,7 @@ export function Applications() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Applications</h1>
-          <p className="text-ink-400 text-sm mt-1">{total} total</p>
+          <p className="text-gray-500 text-sm mt-1">{total} total</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)}>
@@ -170,7 +170,7 @@ export function Applications() {
         <div className="bg-surface rounded-xl border border-border p-4 space-y-4">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-ink-400">Platform:</span>
+              <span className="text-xs text-gray-500">Platform:</span>
               <div className="flex gap-1">
                 {PLATFORMS.map((p) => (
                   <button
@@ -180,7 +180,7 @@ export function Applications() {
                       "px-3 py-1.5 text-xs rounded-lg font-medium transition-colors capitalize",
                       platformFilter === p
                         ? "bg-accent text-white"
-                        : "bg-ink-800 text-ink-400 hover:text-text-primary"
+                        : "bg-gray-100 text-gray-500 hover:text-text-primary"
                     )}
                   >
                     {p}
@@ -190,7 +190,7 @@ export function Applications() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-ink-400">Status:</span>
+              <span className="text-xs text-gray-500">Status:</span>
               <div className="flex gap-1">
                 {STATUSES.map((s) => (
                   <button
@@ -200,7 +200,7 @@ export function Applications() {
                       "px-3 py-1.5 text-xs rounded-lg font-medium transition-colors",
                       statusFilter === s
                         ? "bg-accent text-white"
-                        : "bg-ink-800 text-ink-400 hover:text-text-primary"
+                        : "bg-gray-100 text-gray-500 hover:text-text-primary"
                     )}
                   >
                     {s === "all" ? "All" : s.replace("_", " ")}
@@ -210,7 +210,7 @@ export function Applications() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-ink-400">Date:</span>
+              <span className="text-xs text-gray-500">Date:</span>
               <div className="flex gap-1">
                 {DATE_RANGES.map((d) => (
                   <button
@@ -220,7 +220,7 @@ export function Applications() {
                       "px-3 py-1.5 text-xs rounded-lg font-medium transition-colors",
                       dateRange === d.value
                         ? "bg-accent text-white"
-                        : "bg-ink-800 text-ink-400 hover:text-text-primary"
+                        : "bg-gray-100 text-gray-500 hover:text-text-primary"
                     )}
                   >
                     {d.label}
@@ -232,7 +232,7 @@ export function Applications() {
 
           <div className="flex items-center gap-6 flex-wrap">
             <div className="flex items-center gap-3">
-              <span className="text-xs text-ink-400">Min Score: {minScore}</span>
+              <span className="text-xs text-gray-500">Min Score: {minScore}</span>
               <input
                 type="range"
                 min={0}
@@ -244,13 +244,13 @@ export function Applications() {
             </div>
 
             <div className="relative flex-1 max-w-xs">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search company..."
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                className="w-full pl-9 pr-3 py-1.5 text-sm bg-ink-800 border border-border rounded-lg text-text-primary placeholder:text-ink-500 focus:outline-none focus:border-accent"
+                className="w-full pl-9 pr-3 py-1.5 text-sm bg-gray-100 border border-border rounded-lg text-text-primary placeholder:text-gray-400 focus:outline-none focus:border-accent"
               />
             </div>
           </div>
@@ -270,12 +270,12 @@ export function Applications() {
           <div className="flex-1 min-w-0 overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-ink-800 border-b border-border">
+                <tr className="bg-gray-100 border-b border-border">
                   {SORTABLE_COLUMNS.map((col) => (
                     <th
                       key={col.key}
                       onClick={() => handleSort(col.key)}
-                      className="text-left px-4 py-3 font-medium text-ink-400 cursor-pointer hover:text-text-primary transition-colors select-none"
+                      className="text-left px-4 py-3 font-medium text-gray-500 cursor-pointer hover:text-text-primary transition-colors select-none"
                     >
                       <span className="inline-flex items-center gap-1">
                         {col.label}
@@ -285,8 +285,8 @@ export function Applications() {
                       </span>
                     </th>
                   ))}
-                  <th className="text-left px-4 py-3 font-medium text-ink-400">Email</th>
-                  <th className="text-left px-4 py-3 font-medium text-ink-400">Time Ago</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Email</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Time Ago</th>
                 </tr>
               </thead>
               <tbody>
@@ -300,25 +300,25 @@ export function Applications() {
                     )}
                   >
                     <td className="px-4 py-3 font-medium">{app.company}</td>
-                    <td className="px-4 py-3 text-ink-300">{app.title}</td>
+                    <td className="px-4 py-3 text-gray-600">{app.title}</td>
                     <td className="px-4 py-3">
                       <Badge>{app.platform}</Badge>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <ScoreBar score={app.match_score} size="sm" />
-                        <span className="text-xs text-ink-400 w-8">{app.match_score}%</span>
+                        <span className="text-xs text-gray-500 w-8">{app.match_score}%</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", STATUS_STYLES[app.status] ?? "bg-ink-700 text-ink-400")}>
+                      <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", STATUS_STYLES[app.status] ?? "bg-gray-200 text-gray-500")}>
                         {app.status.replace("_", " ")}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       {emailStatusBadge(app)}
                     </td>
-                    <td className="px-4 py-3 text-ink-500 text-xs whitespace-nowrap">
+                    <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
                       {formatTimeAgo(app.created_at)}
                     </td>
                   </tr>
@@ -333,7 +333,7 @@ export function Applications() {
                 <h3 className="text-sm font-semibold">Application Details</h3>
                 <button
                   onClick={() => setSelectedAppId(null)}
-                  className="p-1.5 rounded-lg hover:bg-surface-hover text-ink-400"
+                  className="p-1.5 rounded-lg hover:bg-surface-hover text-gray-500"
                 >
                   <X size={16} />
                 </button>
@@ -342,9 +342,9 @@ export function Applications() {
               <div className="flex-1 overflow-y-auto p-4 space-y-5">
                 <div>
                   <h2 className="text-lg font-bold">{selectedApp.title}</h2>
-                  <p className="text-ink-400 mt-0.5">{selectedApp.company}</p>
+                  <p className="text-gray-500 mt-0.5">{selectedApp.company}</p>
                   {selectedApp.location && (
-                    <p className="text-xs text-ink-500 mt-0.5">{selectedApp.location}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{selectedApp.location}</p>
                   )}
                 </div>
 
@@ -356,13 +356,13 @@ export function Applications() {
                 </div>
 
                 <div>
-                  <p className="text-xs text-ink-500 mb-1">Match Score</p>
+                  <p className="text-xs text-gray-400 mb-1">Match Score</p>
                   <ScoreBar score={selectedApp.match_score} size="lg" />
                   <p className="text-right text-sm font-medium mt-1">{selectedApp.match_score}%</p>
                 </div>
 
                 <div>
-                  <p className="text-xs text-ink-500 mb-2">Keywords Injected</p>
+                  <p className="text-xs text-gray-400 mb-2">Keywords Injected</p>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedApp.keywords_injected.map((kw) => (
                       <Badge key={kw} variant="success">{kw}</Badge>
@@ -372,7 +372,7 @@ export function Applications() {
 
                 {selectedApp.screenshot_path && (
                   <div>
-                    <p className="text-xs text-ink-500 mb-2">Screenshot</p>
+                    <p className="text-xs text-gray-400 mb-2">Screenshot</p>
                     <a
                       href={`/screenshots/${selectedApp.screenshot_path.split("/").pop()}`}
                       target="_blank"
@@ -381,7 +381,7 @@ export function Applications() {
                       <img
                         src={`/screenshots/${selectedApp.screenshot_path.split("/").pop()}`}
                         alt="Application screenshot"
-                        className="rounded-lg border border-border w-full max-h-40 object-cover bg-ink-800 hover:opacity-80 transition-opacity"
+                        className="rounded-lg border border-border w-full max-h-40 object-cover bg-gray-100 hover:opacity-80 transition-opacity"
                       />
                     </a>
                   </div>
@@ -389,7 +389,7 @@ export function Applications() {
 
                 {selectedApp.apply_url && (
                   <div>
-                    <p className="text-xs text-ink-500 mb-1">Apply URL</p>
+                    <p className="text-xs text-gray-400 mb-1">Apply URL</p>
                     <a
                       href={selectedApp.apply_url}
                       target="_blank"
@@ -404,9 +404,9 @@ export function Applications() {
 
                 {selectedApp.time_to_decide_seconds != null && (
                   <div>
-                    <p className="text-xs text-ink-500 mb-1">Time to Decide</p>
+                    <p className="text-xs text-gray-400 mb-1">Time to Decide</p>
                     <div className="flex items-center gap-2 text-sm text-text-primary">
-                      <Clock size={14} className="text-ink-400" />
+                      <Clock size={14} className="text-gray-500" />
                       {selectedApp.time_to_decide_seconds < 60
                         ? `${selectedApp.time_to_decide_seconds}s`
                         : `${Math.floor(selectedApp.time_to_decide_seconds / 60)}m ${selectedApp.time_to_decide_seconds % 60}s`}
@@ -415,22 +415,22 @@ export function Applications() {
                 )}
 
                 <div>
-                  <p className="text-xs text-ink-500 mb-1">Tailored Resume</p>
-                  <pre className="text-xs text-ink-300 bg-ink-800 rounded-lg p-3 max-h-60 overflow-y-auto whitespace-pre-wrap font-mono leading-relaxed">
+                  <p className="text-xs text-gray-400 mb-1">Tailored Resume</p>
+                  <pre className="text-xs text-gray-600 bg-gray-100 rounded-lg p-3 max-h-60 overflow-y-auto whitespace-pre-wrap font-mono leading-relaxed">
                     {selectedApp.tailored_resume ?? "No resume data available"}
                   </pre>
                 </div>
 
                 {emailHistory.length > 0 && (
                   <div>
-                    <p className="text-xs text-ink-500 mb-2">Email History</p>
+                    <p className="text-xs text-gray-400 mb-2">Email History</p>
                     <div className="space-y-2">
                       {emailHistory.map((entry: Record<string, unknown>, i) => (
-                        <div key={i} className="bg-ink-800 rounded-lg p-3 text-xs space-y-1">
+                        <div key={i} className="bg-gray-100 rounded-lg p-3 text-xs space-y-1">
                           {entry.subject && <p className="font-medium text-text-primary">{entry.subject as string}</p>}
-                          {entry.received_at && <p className="text-ink-500">{formatDate(entry.received_at as string)}</p>}
+                          {entry.received_at && <p className="text-gray-400">{formatDate(entry.received_at as string)}</p>}
                           {entry.type && (
-                            <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium", EMAIL_STYLES[entry.type as string]?.className ?? "bg-ink-700 text-ink-400")}>
+                            <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium", EMAIL_STYLES[entry.type as string]?.className ?? "bg-gray-200 text-gray-500")}>
                               {entry.type as string}
                             </span>
                           )}
@@ -440,7 +440,7 @@ export function Applications() {
                   </div>
                 )}
 
-                <div className="text-[10px] text-ink-500">
+                <div className="text-[10px] text-gray-400">
                   Created: {formatDate(selectedApp.created_at)}
                   {selectedApp.decided_at && <> &middot; Decided: {formatDate(selectedApp.decided_at)}</>}
                 </div>
@@ -452,7 +452,7 @@ export function Applications() {
 
       {total > PER_PAGE && (
         <div className="flex items-center justify-between">
-          <span className="text-sm text-ink-400">
+          <span className="text-sm text-gray-500">
             Showing {total === 0 ? 0 : pageStart}&ndash;{Math.min(pageEnd, total)} of {total} total
           </span>
           <div className="flex items-center gap-2">

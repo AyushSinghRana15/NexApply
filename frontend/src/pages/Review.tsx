@@ -20,7 +20,7 @@ const platformAccent = (platform: string) => {
   if (p === "glassdoor") return "border-green-500/30 bg-green-500/10 text-green-400";
   if (p === "foundit") return "border-orange-500/30 bg-orange-500/10 text-orange-400";
   if (p === "internshala") return "border-teal-500/30 bg-teal-500/10 text-teal-400";
-  return "border-ink-600 bg-ink-700 text-ink-300";
+  return "border-gray-300 bg-gray-200 text-gray-600";
 };
 
 function CountdownBar({ timeLeft, total }: { timeLeft: number; total: number }) {
@@ -31,7 +31,7 @@ function CountdownBar({ timeLeft, total }: { timeLeft: number; total: number }) 
 
   return (
     <div className="flex items-center gap-3 w-full">
-      <div className="flex-1 h-2 rounded-full bg-ink-700 overflow-hidden">
+      <div className="flex-1 h-2 rounded-full bg-gray-200 overflow-hidden">
         <div
           className={cn(
             "h-full rounded-full transition-all duration-1000 ease-linear",
@@ -42,7 +42,7 @@ function CountdownBar({ timeLeft, total }: { timeLeft: number; total: number }) 
       </div>
       <span className={cn(
         "text-xs font-medium tabular-nums shrink-0 w-20 text-right",
-        isUrgent ? "text-red-400" : "text-ink-400"
+        isUrgent ? "text-red-400" : "text-gray-500"
       )}>
         {minutes}:{seconds.toString().padStart(2, "0")} remaining
       </span>
@@ -138,7 +138,7 @@ export function Review() {
           <div className="w-5 h-5 bg-green-500 rounded-full relative" />
         </div>
         <h2 className="text-lg font-semibold">Watching for jobs...</h2>
-        <p className="text-ink-400 text-sm mt-2 max-w-sm">
+        <p className="text-gray-500 text-sm mt-2 max-w-sm">
           The GuardAgent will push new review requests here as soon as forms are filled
         </p>
       </div>
@@ -148,7 +148,7 @@ export function Review() {
   if (!current) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] text-center">
-        <p className="text-ink-500 text-sm">No review selected</p>
+        <p className="text-gray-400 text-sm">No review selected</p>
       </div>
     );
   }
@@ -160,7 +160,7 @@ export function Review() {
           <h1 className="text-2xl font-bold">Review</h1>
           <Badge variant="warning">{pendingReviews.length} pending</Badge>
           {queueRemaining > 0 && (
-            <span className="text-sm text-ink-400">{queueRemaining} more in queue</span>
+            <span className="text-sm text-gray-500">{queueRemaining} more in queue</span>
           )}
         </div>
       </div>
@@ -182,15 +182,15 @@ export function Review() {
 
             <div>
               <h2 className="text-xl font-bold leading-tight">{current.title}</h2>
-              <p className="text-ink-400 mt-1">
+              <p className="text-gray-500 mt-1">
                 {current.company}
-                {current.location && <span className="text-ink-500"> &middot; {current.location}</span>}
+                {current.location && <span className="text-gray-400"> &middot; {current.location}</span>}
               </p>
             </div>
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-ink-500">Match Score</span>
+                <span className="text-xs text-gray-400">Match Score</span>
                 <span className={cn("text-sm font-semibold", matchScoreColor(current.match_score))}>
                   {current.match_score}%
                 </span>
@@ -204,7 +204,7 @@ export function Review() {
               {current.keywords_injected.map((kw) => (
                 <span
                   key={kw}
-                  className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-ink-700 text-ink-300"
+                  className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-200 text-gray-600"
                 >
                   {kw}
                 </span>
@@ -225,7 +225,7 @@ export function Review() {
                   "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors",
                   tab === "screenshot"
                     ? "text-accent border-b-2 border-accent"
-                    : "text-ink-400 hover:text-ink-300"
+                    : "text-gray-500 hover:text-gray-600"
                 )}
               >
                 <Image size={14} /> Screenshot
@@ -236,7 +236,7 @@ export function Review() {
                   "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors",
                   tab === "resume"
                     ? "text-accent border-b-2 border-accent"
-                    : "text-ink-400 hover:text-ink-300"
+                    : "text-gray-500 hover:text-gray-600"
                 )}
               >
                 <FileText size={14} /> Resume
@@ -255,16 +255,16 @@ export function Review() {
                     <img
                       src={`/screenshots/${current.screenshot_path.split("/").pop()}`}
                       alt="Application form screenshot"
-                      className="rounded-lg border border-border w-full object-cover bg-ink-800 cursor-pointer hover:opacity-90 transition-opacity"
+                      className="rounded-lg border border-border w-full object-cover bg-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
                     />
                   </a>
                 ) : (
-                  <div className="flex items-center justify-center h-full text-ink-500 text-sm">
+                  <div className="flex items-center justify-center h-full text-gray-400 text-sm">
                     No screenshot available
                   </div>
                 )
               ) : (
-                <pre className="text-sm text-ink-300 font-mono whitespace-pre-wrap leading-relaxed">
+                <pre className="text-sm text-gray-600 font-mono whitespace-pre-wrap leading-relaxed">
                   {currentResume?.content ?? (
                     `Resume Variant: ${current.resume_variant}
 ────────────────────────────────
@@ -286,17 +286,17 @@ Status: PENDING_REVIEW`
               <button
                 onClick={() => setIndex((i) => Math.max(0, i - 1))}
                 disabled={index === 0}
-                className="p-2 rounded-lg hover:bg-surface-hover text-ink-400 disabled:opacity-30 transition-colors"
+                className="p-2 rounded-lg hover:bg-surface-hover text-gray-500 disabled:opacity-30 transition-colors"
               >
                 <ArrowLeft size={16} />
               </button>
-              <span className="text-xs text-ink-500 tabular-nums min-w-[3rem] text-center">
+              <span className="text-xs text-gray-400 tabular-nums min-w-[3rem] text-center">
                 {index + 1} / {pendingReviews.length}
               </span>
               <button
                 onClick={() => setIndex((i) => Math.min(pendingReviews.length - 1, i + 1))}
                 disabled={index >= pendingReviews.length - 1}
-                className="p-2 rounded-lg hover:bg-surface-hover text-ink-400 disabled:opacity-30 transition-colors"
+                className="p-2 rounded-lg hover:bg-surface-hover text-gray-500 disabled:opacity-30 transition-colors"
               >
                 <ArrowRight size={16} />
               </button>

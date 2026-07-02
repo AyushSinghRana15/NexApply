@@ -75,10 +75,10 @@ function PlatformCard({
   const loaded = status?.loaded ?? false;
 
   return (
-    <div className="bg-surface rounded-xl border border-border p-6 space-y-4 animate-fade-in hover:border-ink-600 transition-all duration-300">
+    <div className="bg-surface rounded-xl border border-border p-6 space-y-4 animate-fade-in hover:border-gray-300 transition-all duration-300">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className={cn("p-2.5 rounded-lg bg-ink-750", meta.color)}>
+          <div className={cn("p-2.5 rounded-lg bg-gray-100", meta.color)}>
             <Icon size={20} />
           </div>
           <div>
@@ -87,7 +87,7 @@ function PlatformCard({
               href={meta.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-ink-400 hover:text-accent transition-colors"
+              className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-accent transition-colors"
             >
               {meta.url.replace("https://www.", "")}
               <ExternalLink size={10} />
@@ -101,7 +101,7 @@ function PlatformCard({
               Cookies loaded
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-ink-700 text-ink-400">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-500">
               <XCircle size={12} />
               Not connected
             </span>
@@ -112,7 +112,7 @@ function PlatformCard({
       <p className="text-sm text-text-secondary leading-relaxed">{meta.description}</p>
 
       <div className="flex items-center justify-between pt-2">
-        <div className="text-xs text-ink-400">
+        <div className="text-xs text-gray-500">
           {status?.last_captured ? (
             <span>Last captured: {new Date(status.last_captured).toLocaleDateString()}</span>
           ) : (
@@ -125,7 +125,7 @@ function PlatformCard({
             size="sm"
             onClick={() => onClear(platform)}
             disabled={!loaded}
-            className="text-ink-400 hover:text-danger"
+            className="text-gray-500 hover:text-danger"
           >
             <Trash2 size={14} />
             Clear
@@ -134,7 +134,7 @@ function PlatformCard({
             size="sm"
             onClick={() => onCapture(platform)}
             disabled={capturing}
-            className="bg-ink-700 hover:bg-ink-600 text-text-primary border border-border"
+            className="bg-gray-200 hover:bg-gray-300 text-text-primary border border-border"
           >
             {capturing ? (
               <Loader2 size={14} className="animate-spin" />
@@ -208,7 +208,7 @@ export function Apps() {
             Log in to job platforms to capture session cookies for automated applications
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => refetch()} className="text-ink-400">
+        <Button variant="ghost" size="sm" onClick={() => refetch()} className="text-gray-500">
           <RefreshCw size={14} />
           Refresh
         </Button>
@@ -227,7 +227,7 @@ export function Apps() {
         ))}
       </div>
 
-      <div className="bg-ink-800/50 rounded-xl border border-border p-5 space-y-3 animate-fade-in">
+      <div className="bg-gray-100 rounded-xl border border-border p-5 space-y-3 animate-fade-in">
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="text-accent" />
           <h3 className="text-sm font-semibold text-text-primary">How it works</h3>
