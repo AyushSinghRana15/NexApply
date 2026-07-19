@@ -19,3 +19,4 @@ fpdf2
 python-multipart
 langgraph
 langchain-core
+langgraph-checkpoint-sqlite
