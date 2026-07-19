@@ -1,263 +1,95 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import {
-  ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
-  PieChart, Pie, Cell,
-  LineChart, Line,
-} from "recharts";
-import { TrendingUp, Send, Clock, Zap } from "lucide-react";
 import { useStatsSummary, useStatsTimeline, useStatsPlatforms } from "@/hooks/useQueries";
-import { fetchApplications } from "@/api/client";
-import { StatCard } from "@/components/ui";
+import { CardSkeleton } from "@/components/common";
+import { cn } from "@/lib/utils";
+import { BarChart3, CheckCircle, Clock, XCircle } from "lucide-react";
+import type { PlatformBreakdown, TimelinePoint } from "@/types";
 
-const PLATFORM_COLORS: Record<string, string> = {
-  Indeed: "#c04a4a",
-  Naukri: "#ef4444",
-  Glassdoor: "#4a8c5c",
-  Foundit: "#f97316",
-  Internshala: "#14b8a6",
-};
-
-const SCORE_COLORS = ["#ef4444", "#f97316", "#eab308", "#4a8c5c", "#16a34a"];
-
-const TOOLTIP_STYLE = {
-  background: "#1c1814",
-  border: "1px solid #2c241e",
-  borderRadius: "8px",
-  fontSize: "13px",
-  outline: "none",
-};
-
-function CustomPieLabel({ cx, cy }: { cx: number; cy: number }) {
+function StatBox({ label, value, icon, color }: { label: string; value: number | string; icon: React.ReactNode; color: string }) {
   return (
-    <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" className="fill-text-primary">
-      <tspan x={cx} dy="-0.5em" className="text-2xl font-bold" />
-    </text>
+    <div className="bg-white rounded-2xl border border-border p-4 soft-shadow hover-lift transition-smooth">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">{label}</span>
+        <div className={cn("p-2 rounded-xl", color)}>{icon}</div>
+      </div>
+      <p className="text-2xl font-bold mt-3 tabular-nums">{typeof value === "number" ? value.toLocaleString() : value}</p>
+    </div>
+  );
+}
+
+function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
+  const pct = max > 0 ? (value / max) * 100 : 0;
+  return (
+    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className={cn("h-full rounded-full transition-all duration-500", color)} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+function PlatformChart({ data }: { data: PlatformBreakdown[] }) {
+  const maxCount = Math.max(...data.map((d) => d.total), 1);
+  const colors = ["bg-blue-400", "bg-green-400", "bg-purple-400", "bg-amber-400", "bg-pink-400"];
+  return (
+    <div className="space-y-3">
+      {data.map((p, i) => (
+        <div key={p.platform}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm font-medium capitalize">{p.platform}</span>
+            <span className="text-xs text-text-muted tabular-nums">{p.total}</span>
+          </div>
+          <MiniBar value={p.total} max={maxCount} color={colors[i % colors.length]} />
+        </div>
+      ))}
+    </div>
   );
 }
 
 export function Analytics() {
-  const { data: stats } = useStatsSummary();
-  const { data: timeline } = useStatsTimeline();
-  const { data: platforms } = useStatsPlatforms();
+  const { data: stats, isLoading: statsLoading } = useStatsSummary();
+  const { data: timelineData } = useStatsTimeline();
+  const { data: platformsData } = useStatsPlatforms();
 
-  const { data: appsData } = useQuery({
-    queryKey: ["applications", "analytics"],
-    queryFn: () => fetchApplications({ per_page: 500 }),
-    refetchInterval: 30_000,
-  });
-
-  const apps = appsData?.items ?? [];
-
-  const acceptanceRate = useMemo(() => {
-    if (!stats) return 0;
-    const total = stats.total_applied + stats.total_skipped + stats.total_pending + stats.total_timeout;
-    if (total === 0) return 0;
-    return Math.round((stats.total_applied / total) * 100);
-  }, [stats]);
-
-  const fastestDecision = useMemo(() => {
-    if (apps.length === 0) return null;
-    const times = apps
-      .filter((a) => a.time_to_decide_seconds != null && a.status === "APPLIED")
-      .map((a) => a.time_to_decide_seconds);
-    if (times.length === 0) return null;
-    return Math.min(...times);
-  }, [apps]);
-
-  const timelineData = useMemo(() => {
-    if (!timeline?.days) return [];
-    return timeline.days.map((d) => ({
-      date: new Date(d.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
-      Applied: d.applied,
-      Skipped: d.skipped,
-    }));
-  }, [timeline]);
-
-  const platformData = useMemo(() => {
-    if (!platforms?.platforms) return [];
-    return platforms.platforms.map((p) => ({
-      name: p.platform.charAt(0).toUpperCase() + p.platform.slice(1),
-      value: p.total,
-    }));
-  }, [platforms]);
-
-  const totalPlatformCount = useMemo(
-    () => platformData.reduce((sum, p) => sum + p.value, 0),
-    [platformData]
-  );
-
-  const scoreBuckets = useMemo(() => {
-    const buckets = [
-      { range: "0-20", min: 0, max: 20, count: 0, color: SCORE_COLORS[0] },
-      { range: "20-40", min: 20, max: 40, count: 0, color: SCORE_COLORS[1] },
-      { range: "40-60", min: 40, max: 60, count: 0, color: SCORE_COLORS[2] },
-      { range: "60-80", min: 60, max: 80, count: 0, color: SCORE_COLORS[3] },
-      { range: "80-100", min: 80, max: 100, count: 0, color: SCORE_COLORS[4] },
-    ];
-    for (const app of apps) {
-      const score = app.match_score;
-      for (const b of buckets) {
-        if (score >= b.min && score < b.max) {
-          b.count++;
-          break;
-        }
-        if (score === 100 && b.max === 100) {
-          b.count++;
-          break;
-        }
-      }
-    }
-    return buckets;
-  }, [apps]);
-
-  const decisionSpeedData = useMemo(() => {
-    const dayMap = new Map<string, number[]>();
-    for (const app of apps) {
-      if (app.time_to_decide_seconds == null || app.status !== "APPLIED") continue;
-      const day = app.created_at.slice(0, 10);
-      if (!dayMap.has(day)) dayMap.set(day, []);
-      dayMap.get(day)!.push(app.time_to_decide_seconds);
-    }
-    return Array.from(dayMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-14)
-      .map(([date, times]) => ({
-        date: new Date(date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
-        avgSeconds: Math.round(times.reduce((a, b) => a + b, 0) / times.length),
-      }));
-  }, [apps]);
+  const timeline: TimelinePoint[] = timelineData?.days ?? [];
+  const platforms: PlatformBreakdown[] = platformsData?.platforms ?? [];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Analytics</h1>
-        <p className="text-gray-500 text-sm mt-1">Detailed pipeline statistics and trends</p>
-      </div>
+    <div className="max-w-[1100px] mx-auto space-y-6">
+      <h1 className="text-2xl font-bold">Analytics</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Applied" value={stats?.total_applied ?? 0} icon={<Send size={20} />} />
-        <StatCard label="Avg Match Score" value={stats ? `${stats.avg_match_score}%` : "-"} icon={<TrendingUp size={20} />} />
-        <StatCard label="Acceptance Rate" value={`${acceptanceRate}%`} icon={<Zap size={20} />} />
-        <StatCard
-          label="Fastest Decision"
-          value={fastestDecision != null ? (fastestDecision < 60 ? `${fastestDecision}s` : `${Math.floor(fastestDecision / 60)}m ${fastestDecision % 60}s`) : "-"}
-          icon={<Clock size={20} />}
-        />
-      </div>
+      {statsLoading ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
+          <StatBox label="Applied" value={stats?.total_applied ?? 0} icon={<CheckCircle size={16} />} color="bg-green-100 text-green-600" />
+          <StatBox label="Skipped" value={stats?.total_skipped ?? 0} icon={<XCircle size={16} />} color="bg-red-100 text-red-600" />
+          <StatBox label="Pending" value={stats?.total_pending ?? 0} icon={<Clock size={16} />} color="bg-amber-100 text-amber-600" />
+          <StatBox label="Avg Score" value={`${stats?.avg_match_score ?? 0}%`} icon={<BarChart3 size={16} />} color="bg-blue-100 text-blue-600" />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Applications Timeline</h2>
-          {timelineData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={timelineData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#3d342a" />
-                <XAxis dataKey="date" stroke="#8a7c6a" fontSize={12} tickLine={false} />
-                <YAxis stroke="#8a7c6a" fontSize={12} tickLine={false} allowDecimals={false} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} />
-                <Legend />
-                <Bar dataKey="Applied" fill="#4a8c5c" radius={[4, 4, 0, 0]} stackId="a" />
-                <Bar dataKey="Skipped" fill="#5c5042" radius={[4, 4, 0, 0]} stackId="a" />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-gray-400 text-sm text-center py-12">No data yet</p>
-          )}
+        <div className="bg-white rounded-2xl border border-border p-5 soft-shadow animate-fade-in">
+          <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Platforms</h3>
+          {platforms.length > 0 ? <PlatformChart data={platforms} /> : <div className="text-sm text-text-muted">No data</div>}
         </div>
 
-        <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Platform Breakdown</h2>
-          {platformData.length > 0 ? (
-            <div className="relative">
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={platformData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {platformData.map((entry) => (
-                      <Cell key={entry.name} fill={PLATFORM_COLORS[entry.name] ?? "#8a7c6a"} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center">
-                <p className="text-2xl font-bold text-text-primary">{totalPlatformCount}</p>
-                <p className="text-[10px] text-gray-400">Total</p>
-              </div>
-              <div className="flex justify-center gap-6 mt-2">
-                {platformData.map((entry) => (
-                  <div key={entry.name} className="flex items-center gap-2 text-xs">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ background: PLATFORM_COLORS[entry.name] ?? "#8a7c6a" }}
-                    />
-                    <span className="text-gray-500">{entry.name}</span>
-                    <span className="font-medium text-text-primary">{entry.value}</span>
+        <div className="bg-white rounded-2xl border border-border p-5 soft-shadow animate-fade-in">
+          <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Last 7 Days</h3>
+          {timeline.length > 0 ? (
+            <div className="space-y-1">
+              {timeline.map((d: TimelinePoint) => (
+                <div key={d.date} className="flex items-center justify-between text-sm py-1 border-b border-border-light last:border-0">
+                  <span className="text-text-muted font-medium">{d.date}</span>
+                  <div className="flex items-center gap-4 tabular-nums">
+                    <span className="text-green-600">{d.applied}</span>
+                    <span className="text-red-500">{d.skipped}</span>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           ) : (
-            <p className="text-gray-400 text-sm text-center py-12">No data yet</p>
-          )}
-        </div>
-
-        <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Match Score Distribution</h2>
-          {scoreBuckets.some((b) => b.count > 0) ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={scoreBuckets}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#3d342a" />
-                <XAxis dataKey="range" stroke="#8a7c6a" fontSize={12} tickLine={false} />
-                <YAxis stroke="#8a7c6a" fontSize={12} tickLine={false} allowDecimals={false} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {scoreBuckets.map((entry) => (
-                    <Cell key={entry.range} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-gray-400 text-sm text-center py-12">No data yet</p>
-          )}
-        </div>
-
-        <div className="bg-surface rounded-xl border border-border p-5">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Decision Speed</h2>
-          {decisionSpeedData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={decisionSpeedData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#3d342a" />
-                <XAxis dataKey="date" stroke="#8a7c6a" fontSize={12} tickLine={false} />
-                <YAxis
-                  stroke="#8a7c6a"
-                  fontSize={12}
-                  tickLine={false}
-                  label={{ value: "seconds", angle: -90, position: "insideLeft", fill: "#8a7c6a", fontSize: 11 }}
-                />
-                <Tooltip contentStyle={TOOLTIP_STYLE} />
-                <Line
-                  type="monotone"
-                  dataKey="avgSeconds"
-                  stroke="#c04a4a"
-                  strokeWidth={2}
-                  dot={{ fill: "#c04a4a", r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-gray-400 text-sm text-center py-12">No data yet</p>
+            <p className="text-sm text-text-muted">No timeline data</p>
           )}
         </div>
       </div>

@@ -9,16 +9,16 @@ import {
   Send, Clock, BarChart3, Mail,
   Search, Brain, Globe, Shield,
   CheckCircle, XCircle, AlertCircle,
-  Activity, Check, Minus
+  Activity, Check, Minus, ArrowRight
 } from "lucide-react";
 import { formatTimeAgo, cn } from "@/lib/utils";
 import { fetchEmailTrackingStats } from "@/api/client";
 
-const agentMeta: Record<string, { name: string; role: string; icon: typeof Search }> = {
-  radar: { name: "RadarAgent", role: "Job Discovery", icon: Search },
-  tailor: { name: "TailorAgent", role: "Resume Tailoring", icon: Brain },
-  fleet: { name: "ApplyFleet", role: "Browser Automation", icon: Globe },
-  guard: { name: "GuardAgent", role: "Review Gate", icon: Shield },
+const agentMeta: Record<string, { name: string; role: string; icon: typeof Search; color: string }> = {
+  radar: { name: "Radar", role: "Job Discovery", icon: Search, color: "text-blue-500 bg-blue-50" },
+  tailor: { name: "Tailor", role: "Resume AI", icon: Brain, color: "text-purple-500 bg-purple-50" },
+  fleet: { name: "Fleet", role: "Auto-Apply", icon: Globe, color: "text-green-500 bg-green-50" },
+  guard: { name: "Guard", role: "Review Gate", icon: Shield, color: "text-amber-500 bg-amber-50" },
 };
 
 const eventIconMap: Record<string, typeof Search> = {
@@ -35,51 +35,45 @@ const eventIconMap: Record<string, typeof Search> = {
 
 function EventIcon({ type, className }: { type: string; className?: string }) {
   const Icon = eventIconMap[type] ?? Activity;
-  return <Icon size={16} className={className} />;
+  return <Icon size={14} className={className} />;
 }
 
 function AgentCard({ agent }: { agent: string }) {
   const info = useWSStore((s) => s.agents[agent]);
   const meta = agentMeta[agent];
-
   if (!meta) return null;
 
   const isOnline = info?.status === "online";
   const isError = info?.status === "error";
 
   return (
-    <div className="bg-white rubik-border rubik-shadow p-4 flex flex-col gap-3">
+    <div className="bg-white rounded-2xl border border-border p-4 soft-shadow hover-lift transition-smooth">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className={cn(
-            "p-2 rubik-border-thin",
-            isOnline ? "bg-cube-green text-white"
-              : isError ? "bg-cube-orange text-white"
-                : "bg-gray-100 text-gray-400"
-          )}>
+        <div className="flex items-center gap-3">
+          <div className={cn("p-2 rounded-xl", meta.color)}>
             <meta.icon size={16} />
           </div>
           <div>
-            <p className="text-sm font-black">{meta.name}</p>
-            <p className="text-xs font-medium text-gray-500">{meta.role}</p>
+            <p className="text-sm font-semibold">{meta.name}</p>
+            <p className="text-xs text-text-muted">{meta.role}</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
           <span className={cn(
-            "w-3 h-3 rubik-border-thin",
-            isOnline ? "bg-cube-green" : isError ? "bg-cube-orange" : "bg-gray-200"
+            "w-2 h-2 rounded-full",
+            isOnline ? "bg-green-500" : isError ? "bg-amber-500" : "bg-gray-300"
           )} />
           <span className={cn(
-            "text-xs font-bold",
-            isOnline ? "text-cube-green" : isError ? "text-cube-orange" : "text-gray-400"
+            "text-xs font-medium",
+            isOnline ? "text-green-600" : isError ? "text-amber-600" : "text-text-muted"
           )}>
             {isOnline ? "Online" : isError ? "Error" : "Offline"}
           </span>
         </div>
       </div>
-      <div className="flex items-center justify-between text-xs font-medium text-gray-500 border-t-2 border-black pt-2">
+      <div className="flex items-center justify-between text-xs text-text-muted mt-3 pt-3 border-t border-border-light">
         <span>{info?.jobs_today ?? 0} jobs today</span>
-        <span>{info?.last_active ? formatTimeAgo(info.last_active) : "—"}</span>
+        <span>{info?.last_active ? formatTimeAgo(info.last_active) : "---"}</span>
       </div>
     </div>
   );
@@ -103,69 +97,37 @@ export function Dashboard() {
 
   const displayPlatforms = ["indeed", "naukri", "glassdoor", "foundit", "internshala"];
 
-  const responseRate = emailStats?.response_rate ?? 0;
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black">Dashboard</h1>
-          <p className="text-sm font-medium text-gray-500 mt-1">NexApply agent pipeline overview</p>
+          <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
+          <p className="text-sm text-text-secondary mt-1">Pipeline overview</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className={cn("w-3 h-3 rubik-border-thin", isConnected ? "bg-cube-green" : "bg-cube-red")} />
-          <span className="text-xs font-bold">{isConnected ? "Live" : "Disconnected"}</span>
+          <span className={cn("w-2 h-2 rounded-full", isConnected ? "bg-green-500" : "bg-red-400")} />
+          <span className="text-xs font-medium text-text-secondary">{isConnected ? "Live" : "Offline"}</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
         {statsLoading ? (
           <>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <CardSkeleton key={i} />
-            ))}
+            {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
           </>
         ) : (
           <>
-            <div className="animate-fade-in">
-              <StatCard
-                label="Applied"
-                value={stats?.total_applied ?? 0}
-                icon={<Send size={20} />}
-                variant="green"
-              />
-            </div>
-            <div className="animate-fade-in" style={{ animationDelay: "0.05s" }}>
-              <StatCard
-                label="Pending Review"
-                value={(stats?.total_pending ?? 0) + pendingReviews.length}
-                icon={<Clock size={20} />}
-                variant="yellow"
-              />
-            </div>
-            <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
-              <StatCard
-                label="Avg Score"
-                value={stats ? `${stats.avg_match_score}%` : "—"}
-                icon={<BarChart3 size={20} />}
-                variant="blue"
-              />
-            </div>
-            <div className="animate-fade-in" style={{ animationDelay: "0.15s" }}>
-              <StatCard
-                label="Response Rate"
-                value={emailStats ? `${responseRate}%` : "—"}
-                icon={<Mail size={20} />}
-                variant="orange"
-              />
-            </div>
+            <StatCard label="Applied" value={stats?.total_applied ?? 0} icon={<Send size={18} />} variant="green" />
+            <StatCard label="Pending" value={(stats?.total_pending ?? 0) + pendingReviews.length} icon={<Clock size={18} />} variant="yellow" />
+            <StatCard label="Avg Score" value={stats ? `${stats.avg_match_score}%` : "---"} icon={<BarChart3 size={18} />} variant="blue" />
+            <StatCard label="Responses" value={emailStats ? `${emailStats.response_rate ?? 0}%` : "---"} icon={<Mail size={18} />} variant="orange" />
           </>
         )}
       </div>
 
-      <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
-        <h2 className="text-sm font-black text-gray-500 uppercase tracking-wider mb-3">Agent Status</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="animate-fade-in">
+        <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">Agents</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
           {Object.keys(agentMeta).map((key) => (
             <AgentCard key={key} agent={key} />
           ))}
@@ -173,33 +135,33 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rubik-border rubik-shadow p-5 animate-fade-in" style={{ animationDelay: "0.15s" }}>
-          <h2 className="text-sm font-black text-gray-500 uppercase tracking-wider mb-3">Activity Feed</h2>
-          <div className="space-y-0 max-h-[400px] overflow-y-auto">
+        <div className="bg-white rounded-2xl border border-border p-5 soft-shadow animate-fade-in">
+          <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Activity</h2>
+          <div className="space-y-0 max-h-[360px] overflow-y-auto">
             {activityFeed.length === 0 && (
-              <p className="text-gray-400 text-sm text-center py-8">Waiting for activity...</p>
+              <p className="text-text-muted text-sm text-center py-8">Waiting for activity...</p>
             )}
-            {activityFeed.slice(0, 100).map((event, i) => (
+            {activityFeed.slice(0, 50).map((event, i) => (
               <div
                 key={event.id}
-                className="flex items-start gap-3 py-3 px-2 border-b-2 border-black transition-colors hover:bg-gray-50"
+                className="flex items-start gap-3 py-3 px-1 border-b border-border-light last:border-0 transition-colors hover:bg-surface-hover rounded-lg"
               >
                 <div className={cn(
-                  "p-1.5 rubik-border-thin shrink-0 mt-0.5",
-                  i % 4 === 0 ? "bg-cube-blue text-white"
-                    : i % 4 === 1 ? "bg-cube-green text-white"
-                      : i % 4 === 2 ? "bg-cube-orange text-white"
-                        : "bg-cube-yellow text-black"
+                  "p-1.5 rounded-lg shrink-0 mt-0.5",
+                  i % 4 === 0 ? "bg-blue-50 text-blue-500"
+                    : i % 4 === 1 ? "bg-green-50 text-green-500"
+                      : i % 4 === 2 ? "bg-amber-50 text-amber-500"
+                        : "bg-purple-50 text-purple-500"
                 )}>
                   <EventIcon type={event.type} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-black truncate">{event.message}</p>
+                  <p className="text-sm font-medium text-text-primary truncate">{event.message}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     {event.platform && (
-                      <span className="text-[10px] font-bold text-gray-500 uppercase">{event.platform}</span>
+                      <span className="text-[10px] font-semibold text-text-muted uppercase">{event.platform}</span>
                     )}
-                    <span className="text-[10px] font-medium text-gray-400">{formatTimeAgo(event.timestamp)}</span>
+                    <span className="text-[10px] text-text-muted">{formatTimeAgo(event.timestamp)}</span>
                   </div>
                 </div>
               </div>
@@ -207,77 +169,74 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white rubik-border rubik-shadow p-5 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          <h2 className="text-sm font-black text-gray-500 uppercase tracking-wider mb-3">Platform Health</h2>
-          <div className="divide-y-2 divide-black">
+        <div className="bg-white rounded-2xl border border-border p-5 soft-shadow animate-fade-in">
+          <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Platforms</h2>
+          <div className="space-y-0">
             {displayPlatforms.map((platform) => {
               const pCfg = configPlatforms?.[platform];
               const connected = pCfg?.cookie_valid ?? pCfg?.enabled ?? false;
               return (
                 <div
                   key={platform}
-                  className="flex items-center justify-between py-3"
+                  className="flex items-center justify-between py-3 px-1 border-b border-border-light last:border-0"
                 >
-                  <span className="text-sm font-bold capitalize">{platform}</span>
+                  <span className="text-sm font-medium capitalize">{platform}</span>
                   {connected ? (
-                    <div className="flex items-center gap-1.5 text-cube-green font-bold text-xs">
+                    <div className="flex items-center gap-1.5 text-green-600 text-xs font-medium">
                       <Check size={14} />
-                      <span>Connected</span>
+                      Connected
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 text-gray-400 font-bold text-xs">
+                    <div className="flex items-center gap-1.5 text-text-muted text-xs font-medium">
                       <Minus size={14} />
-                      <span>Disabled</span>
+                      Offline
                     </div>
                   )}
                 </div>
               );
             })}
-            {(!config && !configPlatforms) && (
-              <p className="text-gray-400 text-sm text-center py-4">Loading platform status...</p>
-            )}
           </div>
         </div>
       </div>
 
-      <div className="bg-white rubik-border rubik-shadow p-5 animate-fade-in" style={{ animationDelay: "0.25s" }}>
+      <div className="bg-white rounded-2xl border border-border p-5 soft-shadow animate-fade-in">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-black text-gray-500 uppercase tracking-wider">Recent Applications</h2>
-          <Link to="/applications" className="text-xs font-bold text-cube-blue rubik-border-thin px-2 py-1 hover:bg-cube-blue hover:text-white transition-colors">View all</Link>
+          <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider">Recent Applications</h2>
+          <Link to="/applications" className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-hover transition-colors">
+            View all <ArrowRight size={12} />
+          </Link>
         </div>
         {appsLoading ? (
           <TableSkeleton rows={5} />
         ) : (
-          <div className="divide-y-2 divide-black">
+          <div className="space-y-0">
             {recentApps?.items.slice(0, 5).map((app) => (
               <div
                 key={app.id}
-                className="flex items-center justify-between py-3 hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between py-3 px-1 border-b border-border-light last:border-0 transition-colors hover:bg-surface-hover rounded-lg"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate">{app.title}</p>
-                  <p className="text-xs font-medium text-gray-500">{app.company}</p>
+                  <p className="text-sm font-medium truncate">{app.title}</p>
+                  <p className="text-xs text-text-muted">{app.company}</p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-4">
                   <Badge
                     variant={
-                      app.status === "APPLIED"
-                        ? "success"
-                        : app.status === "PENDING_REVIEW"
-                          ? "pending"
+                      app.status === "APPLIED" ? "success"
+                        : app.status === "PENDING_REVIEW" ? "pending"
                           : "danger"
                     }
                   >
                     {app.status.replace("_", " ")}
                   </Badge>
-                  <span className="text-xs font-medium text-gray-400 w-14 text-right">
+                  <span className="text-xs text-text-muted w-14 text-right">
                     {formatTimeAgo(app.created_at)}
                   </span>
                 </div>
               </div>
             ))}
             {(!recentApps?.items || recentApps.items.length === 0) && (
-              <p className="text-gray-400 text-sm text-center py-6">No applications yet</p>
+              <p className="text-text-muted text-sm text-center py-8">No applications yet</p>
             )}
           </div>
         )}

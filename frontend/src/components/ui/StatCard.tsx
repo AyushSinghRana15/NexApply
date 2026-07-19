@@ -2,12 +2,12 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const tileVariants: Record<string, string> = {
-  red: "bg-cube-red text-white",
-  blue: "bg-cube-blue text-white",
-  green: "bg-cube-green text-white",
-  yellow: "bg-cube-yellow text-black",
-  orange: "bg-cube-orange text-white",
-  white: "bg-white text-black",
+  red: "bg-red-50 text-red-600 border-red-100",
+  blue: "bg-blue-50 text-blue-600 border-blue-100",
+  green: "bg-green-50 text-green-600 border-green-100",
+  yellow: "bg-amber-50 text-amber-600 border-amber-100",
+  orange: "bg-orange-50 text-orange-600 border-orange-100",
+  white: "bg-white text-text-primary border-border",
 };
 
 interface StatCardProps {
@@ -22,17 +22,17 @@ export function StatCard({ label, value, icon, variant = "white", className }: S
   return (
     <div
       className={cn(
-        "rubik-border rubik-shadow p-5 flex items-center gap-4 transition-all duration-200 hover:translate-x-0.5 hover:translate-y-0.5",
+        "rounded-2xl border p-5 flex items-center gap-4 soft-shadow hover-lift transition-smooth",
         tileVariants[variant] ?? tileVariants.white,
         className
       )}
     >
-      <div className="p-3 bg-black/10 rubik-border-thin shrink-0">
+      <div className="p-2.5 rounded-xl bg-black/5 shrink-0">
         {icon}
       </div>
       <div>
-        <p className="text-sm font-medium opacity-80">{label}</p>
-        <p className="text-2xl font-black mt-0.5">{value}</p>
+        <p className="text-xs font-medium text-text-secondary uppercase tracking-wide">{label}</p>
+        <p className="text-2xl font-bold mt-0.5">{value}</p>
       </div>
     </div>
   );

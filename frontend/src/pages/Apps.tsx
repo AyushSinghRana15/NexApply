@@ -1,245 +1,188 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import {
-  Briefcase, Globe, Eye, Target, GraduationCap,
-  LogIn, Trash2, RefreshCw, CheckCircle, XCircle,
-  Loader2, ExternalLink, Sparkles
-} from "lucide-react";
-import { fetchCookieStatus, captureCookies, clearCookies } from "@/api/client";
-import { Button, Badge } from "@/components/ui";
+import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useConfig } from "@/hooks/useQueries";
 import { toast } from "@/components/common/Toast";
+import { updateConfig } from "@/api/client";
+import { Button } from "@/components/ui";
+import { CheckCircle, XCircle, Plus, X, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { PlatformName, CookieStatus } from "@/types";
 
-const PLATFORM_META: Record<PlatformName, {
-  label: string;
-  description: string;
-  icon: typeof Briefcase;
-  color: string;
-  url: string;
-}> = {
-  naukri: {
-    label: "Naukri",
-    description: "India's top portal for experienced and fresh workers. Upload your resume and apply to thousands of jobs.",
-    icon: Briefcase,
-    color: "text-red-400",
-    url: "https://www.naukri.com",
-  },
-  indeed: {
-    label: "Indeed",
-    description: "World's largest job search engine. Quickly upload your resume and apply to jobs across companies.",
-    icon: Globe,
-    color: "text-blue-400",
-    url: "https://www.indeed.co.in",
-  },
-  glassdoor: {
-    label: "Glassdoor",
-    description: "Check salary estimates and read reviews from past employees before you apply anywhere.",
-    icon: Eye,
-    color: "text-green-400",
-    url: "https://www.glassdoor.co.in",
-  },
-  foundit: {
-    label: "Foundit",
-    description: "Formerly Monster.com. Matches your skills to job openings across many industries in India.",
-    icon: Target,
-    color: "text-orange-400",
-    url: "https://www.foundit.in",
-  },
-  internshala: {
-    label: "Internshala",
-    description: "Best for students and freshers looking for internships or entry-level jobs across India.",
-    icon: GraduationCap,
-    color: "text-teal-400",
-    url: "https://internshala.com",
-  },
-};
-
-const platforms: PlatformName[] = ["naukri", "indeed", "glassdoor", "foundit", "internshala"];
-
-function PlatformCard({
-  platform,
-  status,
-  onCapture,
-  onClear,
-  capturing,
-}: {
-  platform: PlatformName;
-  status?: CookieStatus;
-  onCapture: (p: PlatformName) => void;
-  onClear: (p: PlatformName) => void;
-  capturing: boolean;
-}) {
-  const meta = PLATFORM_META[platform];
-  const Icon = meta.icon;
-  const loaded = status?.loaded ?? false;
-
-  return (
-    <div className="bg-surface rounded-xl border border-border p-6 space-y-4 animate-fade-in hover:border-gray-300 transition-all duration-300">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className={cn("p-2.5 rounded-lg bg-gray-100", meta.color)}>
-            <Icon size={20} />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-text-primary">{meta.label}</h3>
-            <a
-              href={meta.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-accent transition-colors"
-            >
-              {meta.url.replace("https://www.", "")}
-              <ExternalLink size={10} />
-            </a>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {loaded ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
-              <CheckCircle size={12} />
-              Cookies loaded
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-500">
-              <XCircle size={12} />
-              Not connected
-            </span>
-          )}
-        </div>
-      </div>
-
-      <p className="text-sm text-text-secondary leading-relaxed">{meta.description}</p>
-
-      <div className="flex items-center justify-between pt-2">
-        <div className="text-xs text-gray-500">
-          {status?.last_captured ? (
-            <span>Last captured: {new Date(status.last_captured).toLocaleDateString()}</span>
-          ) : (
-            <span>No session saved</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onClear(platform)}
-            disabled={!loaded}
-            className="text-gray-500 hover:text-danger"
-          >
-            <Trash2 size={14} />
-            Clear
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => onCapture(platform)}
-            disabled={capturing}
-            className="bg-gray-200 hover:bg-gray-300 text-text-primary border border-border"
-          >
-            {capturing ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <LogIn size={14} />
-            )}
-            {capturing ? "Opening..." : "Capture Cookies"}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+interface AppConfig {
+  platforms?: Record<string, { enabled?: boolean; cookie_valid?: boolean; cookies?: string[]; headless?: boolean; max_concurrent?: number }>;
 }
 
+const PLATFORM_INFO: Record<string, { label: string; placeholder: string }> = {
+  indeed: { label: "Indeed", placeholder: "user@example.com" },
+  naukri: { label: "Naukri", placeholder: "user@example.com" },
+  glassdoor: { label: "Glassdoor", placeholder: "user@example.com" },
+  foundit: { label: "Foundit", placeholder: "user@example.com" },
+  internshala: { label: "Internshala", placeholder: "user@example.com" },
+};
+
 export function Apps() {
-  const { data: cookieData, isLoading, refetch } = useQuery({
-    queryKey: ["cookie-status"],
-    queryFn: fetchCookieStatus,
-    refetchInterval: 30_000,
-  });
+  const { data: config } = useConfig();
+  const queryClient = useQueryClient();
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
+  const [editingCookies, setEditingCookies] = useState<Record<string, string[]>>({});
+  const [showAddPlatform, setShowAddPlatform] = useState(false);
+  const [newPlatformKey, setNewPlatformKey] = useState("");
+  const [newPlatformLabel, setNewPlatformLabel] = useState("");
 
-  const [capturingPlatform, setCapturingPlatform] = useState<PlatformName | null>(null);
+  const platforms = (config as AppConfig | undefined)?.platforms;
 
-  const captureMutation = useMutation({
-    mutationFn: (platform: PlatformName) => captureCookies(platform),
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.add("success", data.message || "Cookies captured successfully");
-        refetch();
-      } else {
-        toast.add("warning", data.message || "Failed to capture cookies");
-      }
-    },
-    onError: () => {
-      toast.add("error", "Failed to connect to browser automation");
-    },
-    onSettled: () => {
-      setCapturingPlatform(null);
-    },
-  });
+  useEffect(() => {
+    if (platforms) {
+      const initial: Record<string, string[]> = {};
+      Object.entries(platforms).forEach(([key, val]) => {
+        initial[key] = val.cookies ?? [];
+      });
+      setEditingCookies(initial);
+    }
+  }, [platforms]);
 
-  const clearMutation = useMutation({
-    mutationFn: (platform: PlatformName) => clearCookies(platform),
-    onSuccess: (data) => {
-      toast.add("success", data.message || "Cookies cleared");
-      refetch();
-    },
-    onError: () => {
-      toast.add("error", "Failed to clear cookies");
-    },
-  });
+  const handleSaveCookies = async (platformKey: string) => {
+    setLoading((p) => ({ ...p, [`${platformKey}_save`]: true }));
+    try {
+      const newPlatforms = { ...platforms, [platformKey]: { ...(platforms?.[platformKey] ?? {}), cookies: editingCookies[platformKey] ?? [] } };
+      await updateConfig({ platforms: newPlatforms });
+      queryClient.invalidateQueries({ queryKey: ["config"] });
+      toast.getState().add("success", `${platformKey} cookies saved`);
+    } catch (e: any) {
+      toast.getState().add("error", e?.message || "Failed to save cookies");
+    } finally {
+      setLoading((p) => ({ ...p, [`${platformKey}_save`]: false }));
+    }
+  };
 
-  function handleCapture(platform: PlatformName) {
-    setCapturingPlatform(platform);
-    captureMutation.mutate(platform);
-  }
+  const handleAddPlatform = async () => {
+    if (!newPlatformKey.trim()) return;
+    const key = newPlatformKey.trim().toLowerCase().replace(/\s+/g, "_");
+    const newPlatforms = {
+      ...platforms,
+      [key]: { enabled: true, cookies: [], headless: true, max_concurrent: 1 },
+    };
+    try {
+      await updateConfig({ platforms: newPlatforms });
+      queryClient.invalidateQueries({ queryKey: ["config"] });
+      setEditingCookies((p) => ({ ...p, [key]: [] }));
+      setNewPlatformKey("");
+      setNewPlatformLabel("");
+      setShowAddPlatform(false);
+      toast.getState().add("success", `Added platform: ${key}`);
+    } catch {
+      toast.getState().add("error", "Failed to add platform");
+    }
+  };
 
-  function handleClear(platform: PlatformName) {
-    clearMutation.mutate(platform);
-  }
-
-  const statusMap = new Map<PlatformName, CookieStatus>();
-  cookieData?.items?.forEach((s) => statusMap.set(s.platform, s));
+  const handleDeletePlatform = async (platformKey: string) => {
+    if (!window.confirm(`Delete ${platformKey}?`)) return;
+    const newPlatforms = { ...platforms };
+    delete newPlatforms[platformKey];
+    try {
+      await updateConfig({ platforms: newPlatforms });
+      queryClient.invalidateQueries({ queryKey: ["config"] });
+      toast.getState().add("success", `Deleted ${platformKey}`);
+    } catch {
+      toast.getState().add("error", "Failed to delete platform");
+    }
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1100px] mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">App Login</h1>
-          <p className="text-text-secondary text-sm mt-1">
-            Log in to job platforms to capture session cookies for automated applications
-          </p>
-        </div>
-        <Button variant="ghost" size="sm" onClick={() => refetch()} className="text-gray-500">
-          <RefreshCw size={14} />
-          Refresh
+        <h1 className="text-2xl font-bold">App Logins</h1>
+        <Button variant="primary" size="sm" onClick={() => setShowAddPlatform(true)}>
+          <Plus size={14} /> Add Platform
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {platforms.map((platform) => (
-          <PlatformCard
-            key={platform}
-            platform={platform}
-            status={statusMap.get(platform)}
-            onCapture={handleCapture}
-            onClear={handleClear}
-            capturing={capturingPlatform === platform}
-          />
-        ))}
-      </div>
-
-      <div className="bg-gray-100 rounded-xl border border-border p-5 space-y-3 animate-fade-in">
-        <div className="flex items-center gap-2">
-          <Sparkles size={16} className="text-accent" />
-          <h3 className="text-sm font-semibold text-text-primary">How it works</h3>
+      {showAddPlatform && (
+        <div className="bg-white rounded-2xl border border-border p-5 soft-shadow animate-fade-in space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Add New Platform</h3>
+            <button onClick={() => setShowAddPlatform(false)} className="text-text-muted hover:text-text-primary transition-colors">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-text-muted block mb-1">Platform key (lowercase, underscore)</label>
+              <input
+                type="text"
+                value={newPlatformKey}
+                onChange={(e) => setNewPlatformKey(e.target.value)}
+                placeholder="e.g. linkedin, wellfound, cutshort"
+                className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-xl focus:ring-2 focus:ring-accent/20 outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-text-muted block mb-1">Display label</label>
+              <input
+                type="text"
+                value={newPlatformLabel}
+                onChange={(e) => setNewPlatformLabel(e.target.value)}
+                placeholder="e.g. LinkedIn"
+                className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-xl focus:ring-2 focus:ring-accent/20 outline-none"
+              />
+            </div>
+          </div>
+          <Button variant="primary" size="sm" onClick={handleAddPlatform} disabled={!newPlatformKey.trim()}>
+            <Plus size={14} /> Add
+          </Button>
         </div>
-        <ol className="space-y-2 text-sm text-text-secondary ml-5 list-decimal">
-          <li>Click <strong className="text-text-primary">Capture Cookies</strong> for a platform — a browser window will open</li>
-          <li>Log in to your account manually in that window (the system waits for you)</li>
-          <li>Once logged in, the session cookies are saved and the window closes</li>
-          <li>Your cookies are stored locally and used only for automated applications</li>
-          <li>You can <strong className="text-text-primary">Clear</strong> saved cookies at any time</li>
-        </ol>
-      </div>
+      )}
+
+      {Object.entries(PLATFORM_INFO).map(([key, info]) => {
+        const p = platforms?.[key];
+        const isCookieValid = p?.cookie_valid ?? false;
+        const isSaving = loading[`${key}_save`] ?? false;
+
+        return (
+          <div key={key} className="bg-white rounded-2xl border border-border p-5 soft-shadow space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold">{info.label}</span>
+                <span className={cn(
+                  "text-xs font-medium px-2.5 py-0.5 rounded-lg flex items-center gap-1",
+                  isCookieValid ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"
+                )}>
+                  {isCookieValid ? <CheckCircle size={12} /> : <XCircle size={12} />}
+                  {isCookieValid ? "Session Active" : "No Session"}
+                </span>
+              </div>
+              <button
+                onClick={() => handleDeletePlatform(key)}
+                className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-text-muted block mb-1">Cookies (one per line)</label>
+              <textarea
+                value={(editingCookies[key] ?? []).join("\n")}
+                onChange={(e) => setEditingCookies((prev) => ({
+                  ...prev,
+                  [key]: e.target.value.split("\n").filter((s) => s.trim()),
+                }))}
+                placeholder={"sessionid=abc123\ncsrftoken=xyz789"}
+                rows={5}
+                className="w-full px-3 py-2 text-sm font-mono bg-surface border border-border rounded-xl focus:ring-2 focus:ring-accent/20 outline-none"
+              />
+            </div>
+
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => handleSaveCookies(key)}
+              disabled={isSaving}
+            >
+              <Save size={14} /> {isSaving ? "Saving..." : "Save Cookies"}
+            </Button>
+          </div>
+        );
+      })}
     </div>
   );
 }
