@@ -17,3 +17,5 @@ apscheduler
 slowapi
 fpdf2
 python-multipart
+langgraph
+langchain-core
