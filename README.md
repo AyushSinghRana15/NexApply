@@ -35,47 +35,82 @@ JOB POSTED ──→ Spotted in ~30s ──→ Resume tailored in ~2s
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                        NEXAPPLY RUNTIME                          │
-├──────────────┬──────────────────┬──────────────────┬─────────────┤
-│  RadarAgent  │   TailorAgent    │   ApplyFleet      │  GuardAgent │
-│  (Phase 1)   │  (Phase 2)       │  (Phase 3)        │  (Phase 4)  │
-├──────────────┼──────────────────┼──────────────────┼─────────────┤
-│ Indeed RSS   │ Classifier (5ms) │ Worker: Indeed    │ Review card │
-│ Naukri scraper│ Groq API (8s)   │ Worker: Naukri    │ / skip /    │
-│ Internshala  │ → Ollama fallback│ Worker: Internshala│ auto-skip   │
-│ Dedup (Redis)│ Scorer (0-100)   │ Form fill + pause │ after 5min  │
-└──────┬───────┴──────┬───────────┴──────────┬───────┴─────────────┘
-       │              │                      │
-       ▼              ▼                      ▼
-  job_queue       tailor_queue          guard_queue
+┌──────────────────────────────────────────────────────────────────────┐
+│                         NEXAPPLY RUNTIME                             │
+│                                                                      │
+│  RadarAgent ──→ GraphWorker ──→ LangGraph Pipeline ──→ Result        │
+│   (poller)       (consumer)      ┌─────────────────┐                 │
+│                                  │ filter_job       │                 │
+│                                  │ tailor_job       │                 │
+│                                  │ apply_job        │                 │
+│                                  │ guard_review ⏸  │ ← human approve │
+│                                  │ log_result       │                 │
+│                                  └─────────────────┘                 │
+│                                        ↕                             │
+│                                  SQLite checkpoints                   │
+└──────────────────────────────────────────────────────────────────────┘
 ```
+
+### File Workflow — Tabular View
+
+| File | Role | Reads From | Writes To | Notes |
+|---|---|---|---|---|
+| `core/radar.py` | Job detection (poller) | Indeed RSS, Naukri/Internshala via Playwright | `job_queue` (asyncio.Queue) | Runs continuously, deduplicates via Redis/in-memory |
+| `core/graph_worker.py` | Graph consumer | `job_queue` | invokes `core/workflow.py` | One asyncio task per job, bounded by semaphore |
+| `core/workflow.py` | **LangGraph pipeline** | `PipelineState` (in-memory) | `langgraph_checkpoints.db` (SQLite) | Stateful graph with checkpointing + human interrupt |
+| `core/workflow.py::filter_job` | Filter node | `config.yaml` filters, blacklists | `PipelineState.filtered` | Title/location/keyword matching |
+| `core/workflow.py::tailor_job` | Tailor node | `resumes/*.txt`, Groq/Ollama API | `PipelineState.tailored_result` | Classify → variant → LLM keywords → score |
+| `core/workflow.py::apply_job` | Apply node | `workers/*.py`, `cookies/`, `profile.yaml` | `PipelineState.application_payload` | Playwright form fill, stores worker for review |
+| `core/workflow.py::guard_review` | Review node | `interrupt()` (LangGraph) | `PipelineState.decision` | Pauses graph, waits for human via API/WebSocket |
+| `core/workflow.py::log_result` | Log node | `PipelineState` | `logs/applications.jsonl`, `api/db` | Final status write to JSONL + SQLite DB |
+| `api/services/decision.py` | Decision handler | REST API `PATCH /decision` | resumes graph via `resume_pipeline()` | Triggers `Command(resume=action)` on checkpointed graph |
+| `api/routes/ws.py` | WebSocket handler | Frontend `DECISION` message | resumes graph via `resume_pipeline()` | Real-time approve/skip from dashboard |
+| `core/autonomous.py` | Rate limiter | `config.yaml` autonomy settings | `APPROVE/SKIP` decision | Daily/hourly limits, cooldowns, blacklists |
+| `core/classifier.py` | Job classifier | Job title keywords | category string | 5ms, no LLM needed |
+| `core/llm.py` | LLM wrapper | Groq API → Ollama → title fallback | keywords, cover letter | <1s with Groq, offline with Ollama |
+| `core/scorer.py` | Match scorer | Keywords, category, location | 0–100 score | 60% keyword + 25% category + 15% location |
+| `workers/base.py` | Browser automation base | `profile.yaml`, `selectors.yaml`, Playwright | screenshots, form data | 80+ field mappings, smart_fill, DocumentHandler |
+| `workers/indeed.py` | Indeed adapter | `base.py` | `ApplicationPayload` | Indeed-specific apply flow |
+| `workers/naukri.py` | Naukri adapter | `base.py` | `ApplicationPayload` | Naukri modal apply flow |
+| `workers/internshala.py` | Internshala adapter | `base.py` | `ApplicationPayload` | Internshala form flow |
+| `core/resume_parser.py` | PDF/TXT parser | `resumes/*.pdf`, `resumes/*.txt` | parsed skills, experience, education | Feeds dynamic resume builder |
+| `core/queue.py` | Async queue wrapper | `asyncio.Queue` | enqueue/dequeue | Used by RadarAgent → GraphWorker |
+| `core/logger.py` | Structured logger | all agents | terminal + `logs/` | Emoji-prefixed, colorized output |
 
 ### The 5 Agents (Plain English)
 
 | Agent | What it does |
 |---|---|
 | **RadarAgent** | Watches job sites like a hawk. Polls Indeed's RSS feed every 30s, scrapes Naukri & Internshala. Never emits the same job twice. |
-| **QueueBroker** | The filter. Checks if a job matches your preferences (title, location, keywords). Drops the ones that don't. |
-| **TailorAgent** | The resume whisperer. Figures out what category the job is (Engineering, Design, etc.), picks the closest pre-built resume template, asks Groq AI to extract key skills from the JD, and injects them into your resume. Scores the match 0–100. |
-| **ApplyFleet** | The robot hands. Opens a browser, navigates to the application page, fills every field using your saved profile (name, phone, CTC, etc.), uploads the tailored resume, takes a screenshot — then **stops** and asks for permission. Never submits without you. |
-| **GuardAgent** | The gatekeeper. Pushes a review card to a live dashboard showing the job details, your tailored resume, and a screenshot of the filled form. Gives you Approve / Edit / Skip buttons. Auto-skips after 5 minutes if you're away. |
+| **GraphWorker** | The orchestrator. Consumes detected jobs and invokes the LangGraph pipeline for each one. Bounded concurrency prevents browser overload. |
+| **LangGraph Pipeline** | The stateful workflow. Five nodes — filter, tailor, apply, guard review, log — connected as a graph with SQLite checkpointing. Each node wraps the original agent logic. |
+| **GuardReview** | The gatekeeper node. Uses LangGraph's `interrupt()` to pause the graph and wait for human approval via REST API or WebSocket. Resumes on decision. |
+| **AutonomousAgent** | The rate limiter. Enforces daily/hourly limits, company blacklists, cooldowns between applications, and duplicate detection. |
 
 ### Job Flow
 
 ```
-RadarAgent → job_queue → QueueBroker → filtered_queue → TailorAgent
-                                                              ↓
-                                                        tailor_queue
-                                                              ↓
-                                                         ApplyFleet
-                                                              ↓
-                                                        guard_queue
-                                                              ↓
-                                                         GuardAgent
-                                                              ↓
-                                             Human approves → Submitted
-                                             Human skips    → Discarded
+RadarAgent ──→ job_queue ──→ GraphWorker ──→ LangGraph Pipeline
+                                                │
+                                          ┌─────┴─────┐
+                                          │ filter_job │ ← title/location/blacklist
+                                          └─────┬─────┘
+                                                │ pass
+                                          ┌─────┴─────┐
+                                          │ tailor_job │ ← classify + LLM + score
+                                          └─────┬─────┘
+                                                │ score >= threshold
+                                          ┌─────┴──────┐
+                                          │ apply_job  │ ← Playwright form fill
+                                          └─────┬──────┘
+                                                │ PENDING_REVIEW
+                                          ┌─────┴────────┐
+                                          │ guard_review  │ ← interrupt() → human
+                                          └─────┬────────┘
+                                                │ APPROVE / SKIP
+                                          ┌─────┴─────┐
+                                          │ log_result │ ← JSONL + DB
+                                          └───────────┘
 ```
 
 ## Quick Start
@@ -158,17 +193,17 @@ Your personal details (name, phone, experience, CTC, cover letter) go in `profil
 ## Project Structure
 
 ```
-├── core/               # The 5 agents + helpers
-│   ├── radar.py        # RadarAgent — job detection
-│   ├── broker.py       # QueueBroker — filtering
-│   ├── tailor.py       # TailorAgent — resume AI
-│   ├── fleet.py        # ApplyFleet — browser automation
-│   ├── guard.py        # GuardAgent — human review gate
+├── core/               # Agent logic + LangGraph pipeline
+│   ├── radar.py        # RadarAgent — job detection (poller)
+│   ├── graph_worker.py # GraphWorker — consumes jobs, invokes pipeline
+│   ├── workflow.py     # LangGraph StateGraph — filter, tailor, apply, review, log
 │   ├── classifier.py   # Keyword-based job category classifier
 │   ├── llm.py          # Groq + Ollama wrapper with fallback
 │   ├── scorer.py       # Match score calculator
 │   ├── queue.py        # Async job queue
-│   └── models.py       # Shared data types
+│   ├── autonomous.py   # Rate limiter (daily/hourly limits, blacklists)
+│   ├── resume_parser.py # PDF/TXT resume parser + profile merger
+│   └── models.py       # Shared data types (JobEvent, TailoredResult, etc.)
 ├── workers/            # Platform-specific form fillers
 │   ├── base.py         # Shared logic (field fill, screenshots, cookies)
 │   ├── indeed.py       # Indeed Apply
@@ -179,9 +214,12 @@ Your personal details (name, phone, experience, CTC, cover letter) go in `profil
 ├── resumes/            # Pre-built resume templates with {{KEYWORDS}}
 ├── prompts/            # Versioned AI prompts
 ├── logs/               # Run history (resumes, screenshots, decisions)
-├── dashboard/          # Review dashboard server
-├── api/                # Optional API (stats, config management)
-├── frontend/           # Dashboard frontend
+├── api/                # REST API (stats, config, decisions)
+│   ├── routes/         # FastAPI route handlers
+│   ├── services/       # Decision handler, scheduler, agent bridge
+│   ├── models/         # SQLAlchemy ORM models
+│   └── schemas/        # Pydantic response schemas
+├── frontend/           # React dashboard (Review, Analytics, Settings)
 ├── config.yaml         # All settings
 ├── profile.yaml        # Your personal details
 └── selectors.yaml      # Form field selectors per platform
@@ -227,8 +265,8 @@ OLLAMA_HOST=http://localhost:11434 # Optional (AI fallback)
 
 1. Add a watcher in `core/radar.py`
 2. Create an adapter in `workers/foo.py`
-3. Register it in `workers/__init__.py`
+3. Register it in the `worker_map` dict in `core/workflow.py`
 4. Add platform-specific fields to `profile.yaml`
 5. Add DOM selectors to `selectors.yaml`
 
-No changes needed to TailorAgent, QueueBroker, or GuardAgent.
+No changes needed to the LangGraph pipeline nodes (filter, tailor, log).
