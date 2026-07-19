@@ -91,6 +91,19 @@ class ApplicationPayload:
 
 
 @dataclass
+class GraphResult:
+    job_id: str = ""
+    final_status: str = ""
+    decision: str = ""
+    filter_reason: str = ""
+    match_score: int = 0
+    error: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
 class DailyStats:
     applied: int = 0
     skipped: int = 0
