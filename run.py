@@ -9,14 +9,10 @@ import uvicorn
 import yaml
 
 from api.main import app
-from core.autonomous import AutonomousAgent
-from core.broker import QueueBroker
-from core.fleet import ApplyFleet
-from core.guard import GuardAgent
 from core.logger import Logger
 from core.queue import JobQueue
 from core.radar import RadarAgent
-from core.tailor import TailorAgent
+from core.graph_worker import GraphWorker
 from core.resume_parser import parse_resume, merge_into_profile
 
 
@@ -119,43 +115,13 @@ def _count_recent_failures(window_minutes: int = 10) -> int:
 
 async def start_agents(config: dict, log: Logger):
     job_queue = JobQueue()
-    filtered_queue = JobQueue()
-    tailor_queue = JobQueue()
-    guard_queue = JobQueue()
-
-    def save_application(payload, decision=""):
-        try:
-            from api.db.database import SessionLocal
-            from api.services.agent_bridge import agent_bridge
-            db = SessionLocal()
-            try:
-                agent_bridge.save_application(db, payload, decision)
-            finally:
-                db.close()
-        except Exception:
-            pass
 
     radar = RadarAgent(config, job_queue)
-    broker = QueueBroker(config, job_queue, filtered_queue)
-    tailor = TailorAgent(config, filtered_queue, tailor_queue)
-    fleet = ApplyFleet(config, tailor_queue, guard_queue, save_cb=save_application)
-
-    mode = config.get("autonomy", {}).get("mode", "full")
-    need_guard = mode != "full"
-
-    if need_guard:
-        from api.core.websocket import ws_manager as api_ws
-        guard = GuardAgent(config, guard_queue, api_ws, save_cb=save_application)
-        asyncio.create_task(guard.start())
-        log.start("GuardAgent started — supervising applications")
-    else:
-        log.start("GuardAgent bypassed — fully autonomous mode")
+    worker = GraphWorker(config, job_queue)
 
     asyncio.create_task(radar.start())
-    asyncio.create_task(broker.start())
-    asyncio.create_task(tailor.start())
-    asyncio.create_task(fleet.start())
-    log.start("Agent pipeline started")
+    asyncio.create_task(worker.start())
+    log.start("Agent pipeline started — RadarAgent + GraphWorker (LangGraph)")
 
     asyncio.create_task(watchdog(config, log))
     log.start("Watchdog started — monitoring health, hours, STOP file")
@@ -168,72 +134,40 @@ async def start_agents(config: dict, log: Logger):
             from PIL import Image
             Image.new("RGB", (800, 600), color=(30, 41, 59)).save(test_screenshot)
 
-        from core.models import ApplicationPayload
+        from core.models import JobEvent
         test_jobs = [
-            ApplicationPayload(
+            JobEvent(
                 job_id="test-001",
                 platform="indeed",
                 title="Backend Engineer",
                 company="Razorpay",
+                location="Remote",
+                description="Backend Engineer role with Python, FastAPI, Redis",
                 apply_url="https://in.indeed.com/viewjob?jk=test001",
-                match_score=84,
-                keywords_injected=["FastAPI", "Redis", "Python"],
-                resume_variant="engineering_v1",
-                screenshot_path=test_screenshot,
-                status=ApplicationPayload.STATUS_PENDING_REVIEW,
-                approval_event=asyncio.Event(),
             ),
-            ApplicationPayload(
+            JobEvent(
                 job_id="test-002",
                 platform="naukri",
                 title="Senior SDE",
                 company="Google",
+                location="Bangalore",
+                description="Senior Software Engineer with system design, Python, Kubernetes",
                 apply_url="https://naukri.com/job/test002",
-                match_score=92,
-                keywords_injected=["System Design", "Python", "Kubernetes"],
-                resume_variant="engineering_v1",
-                screenshot_path=test_screenshot,
-                status=ApplicationPayload.STATUS_PENDING_REVIEW,
-                approval_event=asyncio.Event(),
             ),
-            ApplicationPayload(
+            JobEvent(
                 job_id="test-003",
                 platform="internshala",
                 title="Backend Intern",
                 company="Salesforce",
+                location="Remote",
+                description="Backend internship with Python, SQL",
                 apply_url="https://internshala.com/internship/test003",
-                match_score=45,
-                keywords_injected=["Python", "SQL"],
-                resume_variant="engineering_v1",
-                screenshot_path=test_screenshot,
-                status=ApplicationPayload.STATUS_PENDING_REVIEW,
-                approval_event=asyncio.Event(),
             ),
         ]
-
-        # In autonomous mode the test payloads go directly to fleet via tailor_queue as TailoredResults
-        if mode == "full":
-            from core.models import TailoredResult
-            for fake in test_jobs:
-                tr = TailoredResult(
-                    job_id=fake.job_id,
-                    platform=fake.platform,
-                    title=fake.title,
-                    company=fake.company,
-                    apply_url=fake.apply_url,
-                    match_score=fake.match_score,
-                    keywords_injected=fake.keywords_injected,
-                    resume_variant=fake.resume_variant,
-                    tailored_resume="Test resume content with {{KEYWORDS}}".replace("{{KEYWORDS}}", ", ".join(fake.keywords_injected)),
-                )
-                await asyncio.sleep(1)
-                await tailor_queue.enqueue(tr)
-                log.detail(f"Test payload {fake.job_id} injected into tailor_queue")
-        else:
-            for fake in test_jobs:
-                await asyncio.sleep(1)
-                await guard_queue.enqueue(fake)
-                log.detail(f"Test payload {fake.job_id} injected into guard_queue")
+        for fake in test_jobs:
+            await asyncio.sleep(1)
+            await job_queue.enqueue(fake)
+            log.detail(f"Test job {fake.job_id} injected into job_queue")
 
 
 async def main():
