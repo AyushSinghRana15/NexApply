@@ -13,10 +13,15 @@ async def websocket_endpoint(ws: WebSocket):
             data = await ws.receive_json()
             msg_type = data.get("type")
             if msg_type == "DECISION":
-                from api.services.agent_bridge import agent_bridge
                 job_id = data.get("job_id", "")
                 action = data.get("action", "")
                 await ws_manager.broadcast_event("REVIEW_CLEARED", job_id=job_id, decision=action)
+                if job_id and action in ("APPROVE", "SKIP", "EDIT"):
+                    try:
+                        from core.workflow import resume_pipeline
+                        await resume_pipeline(job_id, action)
+                    except Exception:
+                        pass
     except WebSocketDisconnect:
         pass
     finally:

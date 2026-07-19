@@ -6,15 +6,11 @@ from sqlalchemy.orm import Session
 from api.core.websocket import ws_manager
 from api.models.application import Application
 from api.models.job import Job
-from core.guard import WSManager as GuardWSManager
 from core.models import ApplicationPayload
 
 
 class AgentBridge:
     """Connects the existing agent pipeline to the API layer."""
-
-    def __init__(self):
-        self.guard_ws = GuardWSManager()
 
     async def notify_job_detected(self, job: dict):
         await ws_manager.broadcast_event("JOB_DETECTED", job=job)

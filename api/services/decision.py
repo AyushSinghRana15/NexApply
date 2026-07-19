@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import datetime, timezone
 
@@ -32,7 +33,19 @@ class DecisionService:
 
         db.commit()
         db.refresh(app)
+
+        if app.job_id and action in ("APPROVE", "SKIP", "EDIT"):
+            asyncio.create_task(self._resume_graph(app.job_id, action))
+
         return app
+
+    async def _resume_graph(self, job_id: str, action: str):
+        try:
+            from core.workflow import resume_pipeline
+            await resume_pipeline(job_id, action)
+        except Exception as e:
+            import logging
+            logging.getLogger("decision").warning(f"Failed to resume graph for {job_id}: {e}")
 
 
 decision_service = DecisionService()
