@@ -1,9 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Briefcase, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { useApplications } from "@/hooks/useQueries";
 import { Button, Badge } from "@/components/ui";
 import { TableSkeleton } from "@/components/common";
 import { formatTimeAgo } from "@/lib/utils";
+
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   APPLIED: <CheckCircle size={13} className="text-green-500" />,
@@ -23,15 +32,20 @@ export function Applications() {
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const perPage = 15;
+  const debouncedSearch = useDebouncedValue(search, 400);
 
   const { data, isLoading, isError, error } = useApplications({
     page,
+    per_page: perPage,
+    search: debouncedSearch.trim() || undefined,
     status: statusFilter || undefined,
   });
 
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
-  const hasMore = items.length >= 15;
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const hasMore = page < totalPages;
   const hasPrev = page > 1;
 
   return (
@@ -94,9 +108,7 @@ export function Applications() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items
-                    .filter((app) => !search || app.title.toLowerCase().includes(search.toLowerCase()) || app.company.toLowerCase().includes(search.toLowerCase()))
-                    .map((app) => (
+                  {items.map((app) => (
                     <tr key={app.id} className="border-b border-border-light last:border-0 hover:bg-surface-hover transition-colors">
                       <td className="px-4 py-3 font-medium">{app.company}</td>
                       <td className="px-4 py-3 text-text-secondary truncate max-w-[200px]">{app.title}</td>
@@ -132,7 +144,7 @@ export function Applications() {
 
             <div className="flex items-center justify-between px-4 py-3 border-t border-border-light bg-surface/50">
               <span className="text-xs text-text-muted">
-                {total} result{total !== 1 && "s"} &middot; page {page}
+                {total} result{total !== 1 && "s"} &middot; page {page} of {totalPages}
               </span>
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setPage((p) => p - 1)} disabled={!hasPrev}>

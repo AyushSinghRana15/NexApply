@@ -14,7 +14,7 @@ export function useJobs(page = 1) {
   });
 }
 
-export function useApplications(params?: { page?: number; platform?: string; status?: string }) {
+export function useApplications(params?: { page?: number; per_page?: number; platform?: string; status?: string; search?: string; min_score?: number; date_range?: string }) {
   return useQuery({
     queryKey: ["applications", params],
     queryFn: () => fetchApplications(params),

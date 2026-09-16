@@ -26,7 +26,11 @@ def list_applications(
     if status:
         query = query.filter(Application.status == status)
     if search:
-        query = query.filter(Application.company.ilike(f"%{search}%"))
+        query = query.filter(
+            Application.company.ilike(f"%{search}%")
+            | Application.title.ilike(f"%{search}%")
+            | Application.platform.ilike(f"%{search}%")
+        )
     if min_score:
         query = query.filter(Application.match_score >= min_score)
     if date_range == "7d":
