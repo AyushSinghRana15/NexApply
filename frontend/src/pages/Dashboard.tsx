@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useStatsSummary, useApplications, useConfig } from "@/hooks/useQueries";
@@ -12,7 +12,7 @@ import {
   Activity, Check, Minus, ArrowRight
 } from "lucide-react";
 import { formatTimeAgo, cn } from "@/lib/utils";
-import { fetchEmailTrackingStats } from "@/api/client";
+import { fetchEmailTrackingStats, fetchCookieStatus, fetchHealth } from "@/api/client";
 
 const agentMeta: Record<string, { name: string; role: string; icon: typeof Search; color: string }> = {
   radar: { name: "Radar", role: "Job Discovery", icon: Search, color: "text-blue-500 bg-blue-50" },
@@ -88,11 +88,36 @@ export function Dashboard() {
   });
   const { data: recentApps, isLoading: appsLoading } = useApplications({ page: 1 });
   const { data: config } = useConfig();
-  const { pendingReviews, activityFeed, isConnected } = useWSStore();
+  const { pendingReviews, activityFeed, isConnected, setAgentStatus } = useWSStore();
+  const { data: health } = useQuery({
+    queryKey: ["health"],
+    queryFn: fetchHealth,
+    refetchInterval: 15_000,
+  });
+
+  useEffect(() => {
+    const agents = (health?.agents ?? {}) as Record<string, { state?: string; queue_size?: number; processed?: number; started_at?: string }>;
+    const worker = agents.graph_worker;
+    const radar = agents.radar;
+    if (radar) {
+      setAgentStatus("radar", radar.state === "online" ? "online" : "offline", radar.queue_size ?? 0, radar.started_at);
+    }
+    const pipelineState = worker?.state === "online" ? "online" : "offline";
+    const processed = worker?.processed ?? 0;
+    for (const agent of ["tailor", "fleet", "guard"] as const) {
+      setAgentStatus(agent, pipelineState, processed, worker?.started_at);
+    }
+  }, [health, setAgentStatus]);
+
+  const { data: cookieStatus } = useQuery({
+    queryKey: ["cookies/status"],
+    queryFn: fetchCookieStatus,
+    refetchInterval: 30_000,
+  });
 
   const configPlatforms = useMemo(() => {
     if (!config?.platforms) return null;
-    return config.platforms as Record<string, { enabled?: boolean; cookie_valid?: boolean }>;
+    return config.platforms as Record<string, boolean>;
   }, [config]);
 
   const displayPlatforms = ["indeed", "naukri", "glassdoor", "foundit", "internshala"];
@@ -173,23 +198,29 @@ export function Dashboard() {
           <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Platforms</h2>
           <div className="space-y-0">
             {displayPlatforms.map((platform) => {
-              const pCfg = configPlatforms?.[platform];
-              const connected = pCfg?.cookie_valid ?? pCfg?.enabled ?? false;
+              const enabled = configPlatforms?.[platform] === true;
+              const session = cookieStatus?.platforms?.[platform];
+              const ready = enabled && Boolean(session?.loaded);
               return (
                 <div
                   key={platform}
                   className="flex items-center justify-between py-3 px-1 border-b border-border-light last:border-0"
                 >
                   <span className="text-sm font-medium capitalize">{platform}</span>
-                  {connected ? (
+                  {ready ? (
                     <div className="flex items-center gap-1.5 text-green-600 text-xs font-medium">
                       <Check size={14} />
-                      Connected
+                      Ready
+                    </div>
+                  ) : enabled ? (
+                    <div className="flex items-center gap-1.5 text-amber-600 text-xs font-medium">
+                      <Clock size={14} />
+                      Needs cookies
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5 text-text-muted text-xs font-medium">
                       <Minus size={14} />
-                      Offline
+                      Disabled
                     </div>
                   )}
                 </div>
