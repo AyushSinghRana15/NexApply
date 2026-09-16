@@ -139,6 +139,20 @@ def preview_resume(body: dict, db: Session = Depends(get_db)):
     return {"injected": injected}
 
 
+@router.get("/{resume_id}/download")
+def download_resume(resume_id: int, db: Session = Depends(get_db)):
+    from fastapi.responses import Response
+    r = db.query(ResumeVariant).filter(ResumeVariant.id == resume_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    safe_name = r.name.replace("/", "_").replace(" ", "_").lower()
+    return Response(
+        content=r.content.encode("utf-8"),
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}.txt"'},
+    )
+
+
 @router.patch("/{resume_id}")
 def update_resume(resume_id: int, body: dict, db: Session = Depends(get_db)):
     r = db.query(ResumeVariant).filter(ResumeVariant.id == resume_id).first()

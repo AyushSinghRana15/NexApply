@@ -29,16 +29,6 @@ export async function fetchApplication(id: number): Promise<Application> {
   return data;
 }
 
-export async function submitDecision(id: number, action: string): Promise<Application> {
-  const { data } = await api.patch(`/applications/${id}/decision`, { action });
-  return data;
-}
-
-export async function fetchEmailHistory(id: number): Promise<{ items: unknown[] }> {
-  const { data } = await api.get(`/applications/${id}/email-history`);
-  return data;
-}
-
 export async function fetchStatsSummary(): Promise<StatsSummary> {
   const { data } = await api.get("/stats/summary");
   return data;
@@ -130,10 +120,6 @@ export async function fetchActivityLog(): Promise<{ items: ActivityLogEntry[] }>
 export async function fetchHealth(): Promise<Record<string, unknown>> {
   const { data } = await api.get("/health");
   return data;
-}
-
-export async function clearApplications(): Promise<void> {
-  await api.delete("/applications");
 }
 
 export async function fetchCookieStatus(): Promise<{ platforms: Record<string, CookieStatus> }> {
