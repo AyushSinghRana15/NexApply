@@ -314,11 +314,21 @@ async def guard_review(state: PipelineState, config=None) -> dict:
         "platform": payload_dict.get("platform", ""),
         "title": payload_dict.get("title", ""),
         "company": payload_dict.get("company", ""),
+        "apply_url": payload_dict.get("apply_url", ""),
         "match_score": payload_dict.get("match_score", 0),
-        "keywords": payload_dict.get("keywords_injected", []),
+        "keywords_injected": payload_dict.get("keywords_injected", []),
         "resume_variant": payload_dict.get("resume_variant", ""),
-        "screenshot_url": f"/screenshot/{payload_dict.get('job_id', '')}",
+        "screenshot_path": payload_dict.get("screenshot_path", ""),
+        "status": payload_dict.get("status", "PENDING_REVIEW"),
+        "filled_at": payload_dict.get("filled_at", ""),
+        "location": payload_dict.get("location", ""),
     }
+
+    try:
+        from api.core.websocket import ws_manager
+        await ws_manager.broadcast_event("REVIEW_READY", payload=review_info)
+    except Exception:
+        pass
 
     decision = interrupt(review_info)
 

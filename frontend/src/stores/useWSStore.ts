@@ -3,6 +3,19 @@ import type { ReviewPayload, AgentStatus, ActivityEvent, WSMessage } from "@/typ
 
 let eventCounter = 0;
 
+function normalizeReview(payload: any): ReviewPayload {
+  return {
+    ...payload,
+    keywords_injected: Array.isArray(payload.keywords_injected)
+      ? payload.keywords_injected
+      : Array.isArray(payload.keywords)
+        ? payload.keywords
+        : [],
+    screenshot_path: payload.screenshot_path ?? payload.screenshot_url ?? "",
+    location: payload.location ?? "",
+  };
+}
+
 interface WSState {
   ws: WebSocket | null;
   isConnected: boolean;
@@ -18,6 +31,7 @@ interface WSState {
   addReview: (r: ReviewPayload) => void;
   removeReview: (jobId: string) => void;
   nextReview: () => void;
+  sendDecision: (jobId: string, action: string) => boolean;
   setAgentStatus: (agent: string, status: string, jobs_today?: number, last_active?: string) => void;
   addActivity: (event: Omit<ActivityEvent, "id">) => void;
   updateCountdown: (jobId: string, seconds: number) => void;
@@ -58,7 +72,7 @@ export const useWSStore = create<WSState>((set, get) => ({
         switch (msg.type) {
           case "REVIEW_READY":
           case "NEW_REVIEW": {
-            const payload = "payload" in msg ? msg.payload : null;
+            const payload = "payload" in msg ? normalizeReview(msg.payload) : null;
             if (payload) {
               set((s) => ({
                 pendingReviews: s.pendingReviews.some((r) => r.job_id === payload.job_id)
@@ -144,6 +158,13 @@ export const useWSStore = create<WSState>((set, get) => ({
               job_id: msg.job_id,
             });
             break;
+          case "RESUME_SUGGESTION":
+            get().addActivity({
+              type: "RESUME_SUGGESTION",
+              timestamp: new Date().toISOString(),
+              message: `Resume suggestion: ${msg.variant} (avg ${msg.avg_score})`,
+            });
+            break;
           case "COUNTDOWN":
             if ("job_id" in msg) {
               get().updateCountdown(msg.job_id, msg.seconds_remaining);
@@ -177,7 +198,7 @@ export const useWSStore = create<WSState>((set, get) => ({
     set({ ws: null, isConnected: false, reconnectAttempts: 0 });
   },
 
-  addReview: (r) => set((s) => ({ pendingReviews: [...s.pendingReviews, r] })),
+  addReview: (r) => set((s) => ({ pendingReviews: [...s.pendingReviews, normalizeReview(r)] })),
 
   removeReview: (jobId) =>
     set((s) => ({
@@ -189,6 +210,13 @@ export const useWSStore = create<WSState>((set, get) => ({
     set((s) => ({
       activeReviewIndex: Math.min(s.activeReviewIndex + 1, Math.max(0, s.pendingReviews.length - 1)),
     })),
+
+  sendDecision: (jobId, action) => {
+    const { ws, isConnected } = get();
+    if (!ws || ws.readyState !== WebSocket.OPEN || !isConnected) return false;
+    ws.send(JSON.stringify({ type: "DECISION", job_id: jobId, action }));
+    return true;
+  },
 
   setAgentStatus: (agent, status, jobs_today, last_active) =>
     set((s) => ({

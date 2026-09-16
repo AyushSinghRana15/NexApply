@@ -173,6 +173,11 @@ export interface CookieStatus {
   last_captured?: string;
 }
 
+export type ReviewPayloadInput = Partial<ReviewPayload> & {
+  keywords?: string[];
+  screenshot_url?: string;
+};
+
 export type WSMessage =
   | { type: "REVIEW_READY"; payload: ReviewPayload }
   | { type: "REVIEW_CLEARED"; job_id: string; decision: string }
@@ -186,4 +191,4 @@ export type WSMessage =
   | { type: "RESUME_SUGGESTION"; variant: string; avg_score: number; suggestions: string[] }
   | { type: "COUNTDOWN"; job_id: string; seconds_remaining: number }
   | { type: "CLEARED"; job_id: string }
-  | { type: "NEW_REVIEW"; payload: ReviewPayload };
+  | { type: "NEW_REVIEW"; payload: ReviewPayloadInput };

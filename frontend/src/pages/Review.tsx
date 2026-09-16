@@ -3,7 +3,6 @@ import { Check, X, Edit3, ArrowLeft, ArrowRight, FileText, Image } from "lucide-
 import { useWSStore } from "@/stores/useWSStore";
 import { Button, Badge, ScoreBar } from "@/components/ui";
 import { useResumes } from "@/hooks/useQueries";
-import { submitDecision } from "@/api/client";
 import { useToast } from "@/components/common/Toast";
 import { matchScoreColor, cn } from "@/lib/utils";
 import type { ReviewPayload } from "@/types";
@@ -38,15 +37,17 @@ function CountdownBar({ timeLeft, total }: { timeLeft: number; total: number }) 
 }
 
 export function Review() {
-  const { pendingReviews, removeReview } = useWSStore();
+  const { pendingReviews, removeReview, countdowns, sendDecision } = useWSStore();
   const { data: resumesData } = useResumes();
   const [index, setIndex] = useState(0);
-  const [countdown, setCountdown] = useState(TIMEOUT_SECONDS);
+  const [localCountdown, setLocalCountdown] = useState(TIMEOUT_SECONDS);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [tab, setTab] = useState<"screenshot" | "resume">("screenshot");
 
   const current = pendingReviews[index] as ReviewPayload | undefined;
   const queueRemaining = pendingReviews.length - index - 1;
+  const serverCountdown = current ? countdowns[current.job_id] : undefined;
+  const countdown = serverCountdown ?? localCountdown;
 
   useEffect(() => {
     if (index >= pendingReviews.length && pendingReviews.length > 0) {
@@ -55,14 +56,11 @@ export function Review() {
   }, [pendingReviews.length, index]);
 
   useEffect(() => {
-    setCountdown(TIMEOUT_SECONDS);
+    setLocalCountdown(TIMEOUT_SECONDS);
     setTab("screenshot");
     if (!current) return;
     const interval = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) { handleAction("TIMEOUT"); return 0; }
-        return c - 1;
-      });
+      setLocalCountdown((c) => (c > 0 ? c - 1 : 0));
     }, 1000);
     return () => clearInterval(interval);
   }, [current?.job_id]);
@@ -76,19 +74,20 @@ export function Review() {
     if (!current || submitting) return;
     setSubmitting(action);
     try {
-      if (action !== "TIMEOUT") {
-        const idx = pendingReviews.indexOf(current);
-        await submitDecision(idx >= 0 ? idx : 0, action);
+      const ok = sendDecision(current.job_id, action);
+      if (ok) {
         useToast.getState().add(
           action === "APPROVE" ? "success" : action === "SKIP" ? "error" : "info",
           action === "APPROVE" ? "Approved & submitted" : action === "SKIP" ? "Skipped" : "Marked for edit"
         );
+        removeReview(current.job_id);
+        if (index >= pendingReviews.length - 1 && index > 0) setIndex((i) => i - 1);
+      } else {
+        useToast.getState().add("error", "Not connected — decision not sent");
       }
-      removeReview(current.job_id);
-      if (index >= pendingReviews.length - 1 && index > 0) setIndex((i) => i - 1);
     } catch { useToast.getState().add("error", "Failed to submit"); }
     setSubmitting(null);
-  }, [current, submitting, index, pendingReviews]);
+  }, [current, submitting, index, pendingReviews, sendDecision, removeReview]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -163,7 +162,7 @@ export function Review() {
             </div>
 
             <div className="flex flex-wrap gap-1.5">
-              {current.keywords_injected.map((kw: string) => (
+              {(current.keywords_injected ?? []).map((kw: string) => (
                 <span
                   key={kw}
                   className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 text-text-secondary"
@@ -219,7 +218,7 @@ export function Review() {
                 )
               ) : (
                 <pre className="text-sm text-text-secondary font-mono whitespace-pre-wrap leading-relaxed">
-                  {currentResume?.content ?? `Resume: ${current.resume_variant}\nKeywords: ${current.keywords_injected.join(", ")}\nScore: ${current.match_score}%`}
+                  {currentResume?.content ?? `Resume: ${current.resume_variant}\nKeywords: ${(current.keywords_injected ?? []).join(", ")}\nScore: ${current.match_score}%`}
                 </pre>
               )}
             </div>
