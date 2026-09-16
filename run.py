@@ -1,173 +1,60 @@
 import asyncio
 import os
 import sys
-import time as time_mod
-from datetime import datetime
-from datetime import time as dt_time
 
 import uvicorn
 import yaml
 
-from api.main import app
+from api.core import runtime
 from core.logger import Logger
-from core.queue import JobQueue
-from core.radar import RadarAgent
-from core.graph_worker import GraphWorker
-from core.resume_parser import parse_resume, merge_into_profile
 
 
-async def watchdog(config: dict, log: Logger):
-    autonomy = config.get("autonomy", {})
-    safety = config.get("safety", {})
-    stop_file = safety.get("emergency_stop_file", "STOP")
-    apply_hours = autonomy.get("apply_hours", {"start": "08:00", "end": "23:00"})
-    skip_weekends = autonomy.get("skip_weekends", False)
-    max_fails = safety.get("max_failures_before_pause", 5)
-    consecutive_failures = 0
-    report_hour = safety.get("report_hour", 21)
-    last_report_date = ""
+async def inject_test_jobs():
+    while not runtime.is_running():
+        await asyncio.sleep(0.5)
+    job_queue = runtime.get_job_queue()
 
-    while True:
-        if os.path.exists(stop_file):
-            log.critical(f"STOP file detected — shutting down all agents")
-            log.warn("Remove STOP file and restart to resume")
-            os._exit(0)
+    screenshots_dir = "logs/screenshots"
+    os.makedirs(screenshots_dir, exist_ok=True)
+    test_screenshot = os.path.join(screenshots_dir, "test-001_razorpay.png")
+    if not os.path.exists(test_screenshot):
+        from PIL import Image
+        Image.new("RGB", (800, 600), color=(30, 41, 59)).save(test_screenshot)
 
-        recent = _count_recent_failures()
-        if recent >= max_fails:
-            log.warn(f"{recent} failures detected — pausing 10 minutes")
-            await asyncio.sleep(600)
-
-        now = datetime.now()
-        start_str = apply_hours.get("start", "08:00")
-        end_str = apply_hours.get("end", "23:00")
-        start_h, start_m = map(int, start_str.split(":"))
-        end_h, end_m = map(int, end_str.split(":"))
-
-        start_t = dt_time(hour=start_h, minute=start_m)
-        end_t = dt_time(hour=end_h, minute=end_m)
-        current_t = now.time()
-
-        if not (start_t <= current_t <= end_t):
-            if current_t > end_t:
-                next_start = datetime(now.year, now.month, now.day, start_h, start_m)
-                if next_start <= now:
-                    next_start = datetime(now.year, now.month, now.day + 1, start_h, start_m)
-                delta = (next_start - now).total_seconds()
-                log.watchdog_sleep(f"Outside apply hours ({start_str}-{end_str}) — sleeping {delta/3600:.1f}h until {start_str}")
-                await asyncio.sleep(min(delta, 3600))
-            else:
-                next_start = datetime(now.year, now.month, now.day, start_h, start_m)
-                delta = (next_start - now).total_seconds()
-                log.watchdog_sleep(f"Before apply hours — sleeping {delta/3600:.1f}h until {start_str}")
-                await asyncio.sleep(min(delta, 3600))
-            continue
-
-        if skip_weekends and now.weekday() >= 5:
-            days_until_monday = (7 - now.weekday()) % 7
-            if days_until_monday == 0:
-                days_until_monday = 7
-            log.watchdog_sleep(f"Weekend — skipping until Monday")
-            await asyncio.sleep(days_until_monday * 86400)
-            continue
-
-        today_str = now.strftime("%Y-%m-%d")
-        if safety.get("daily_report", False) and report_hour and last_report_date != today_str:
-            if now.hour >= report_hour:
-                try:
-                    from api.services.daily_report import DailyReport
-                    report = DailyReport()
-                    subject, body = await report.generate()
-                    log.report_sent(subject)
-                    last_report_date = today_str
-                except Exception as e:
-                    log.warn(f"Daily report error: {e}")
-
-        await asyncio.sleep(30)
-
-
-def _count_recent_failures(window_minutes: int = 10) -> int:
-    try:
-        with open("logs/applications.jsonl") as f:
-            lines = f.readlines()
-    except (FileNotFoundError, OSError):
-        return 0
-
-    cutoff = time_mod.time() - (window_minutes * 60)
-    count = 0
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            import json
-            entry = json.loads(line)
-            if entry.get("status") in ("FAILED", "SUBMIT_FAILED"):
-                ts = entry.get("filled_at", entry.get("detected_at", ""))
-                if ts:
-                    parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                    if parsed.timestamp() >= cutoff:
-                        count += 1
-        except Exception:
-            continue
-    return count
-
-
-async def start_agents(config: dict, log: Logger):
-    job_queue = JobQueue()
-
-    radar = RadarAgent(config, job_queue)
-    worker = GraphWorker(config, job_queue)
-
-    asyncio.create_task(radar.start())
-    asyncio.create_task(worker.start())
-    log.start("Agent pipeline started — RadarAgent + GraphWorker (LangGraph)")
-
-    asyncio.create_task(watchdog(config, log))
-    log.start("Watchdog started — monitoring health, hours, STOP file")
-
-    if "--test" in sys.argv:
-        screenshots_dir = "logs/screenshots"
-        os.makedirs(screenshots_dir, exist_ok=True)
-        test_screenshot = os.path.join(screenshots_dir, "test-001_razorpay.png")
-        if not os.path.exists(test_screenshot):
-            from PIL import Image
-            Image.new("RGB", (800, 600), color=(30, 41, 59)).save(test_screenshot)
-
-        from core.models import JobEvent
-        test_jobs = [
-            JobEvent(
-                job_id="test-001",
-                platform="indeed",
-                title="Backend Engineer",
-                company="Razorpay",
-                location="Remote",
-                description="Backend Engineer role with Python, FastAPI, Redis",
-                apply_url="https://in.indeed.com/viewjob?jk=test001",
-            ),
-            JobEvent(
-                job_id="test-002",
-                platform="naukri",
-                title="Senior SDE",
-                company="Google",
-                location="Bangalore",
-                description="Senior Software Engineer with system design, Python, Kubernetes",
-                apply_url="https://naukri.com/job/test002",
-            ),
-            JobEvent(
-                job_id="test-003",
-                platform="internshala",
-                title="Backend Intern",
-                company="Salesforce",
-                location="Remote",
-                description="Backend internship with Python, SQL",
-                apply_url="https://internshala.com/internship/test003",
-            ),
-        ]
-        for fake in test_jobs:
-            await asyncio.sleep(1)
-            await job_queue.enqueue(fake)
-            log.detail(f"Test job {fake.job_id} injected into job_queue")
+    from core.models import JobEvent
+    test_jobs = [
+        JobEvent(
+            job_id="test-001",
+            platform="indeed",
+            title="Backend Engineer",
+            company="Razorpay",
+            location="Remote",
+            description="Backend Engineer role with Python, FastAPI, Redis",
+            apply_url="https://in.indeed.com/viewjob?jk=test001",
+        ),
+        JobEvent(
+            job_id="test-002",
+            platform="naukri",
+            title="Senior SDE",
+            company="Google",
+            location="Bangalore",
+            description="Senior Software Engineer with system design, Python, Kubernetes",
+            apply_url="https://naukri.com/job/test002",
+        ),
+        JobEvent(
+            job_id="test-003",
+            platform="internshala",
+            title="Backend Intern",
+            company="Salesforce",
+            location="Remote",
+            description="Backend internship with Python, SQL",
+            apply_url="https://internshala.com/internship/test003",
+        ),
+    ]
+    for fake in test_jobs:
+        await asyncio.sleep(1)
+        await job_queue.enqueue(fake)
+        Logger().detail(f"Test job {fake.job_id} injected into job_queue")
 
 
 async def main():
@@ -199,6 +86,7 @@ async def main():
     if resume_arg:
         log.detail(f"Parsing resume: {resume_arg}")
         try:
+            from core.resume_parser import parse_resume, merge_into_profile
             parsed = parse_resume(resume_arg)
             log.success(f"Resume parsed — found {len(parsed.get('skills', {}).get('primary', []))} skills, "
                         f"{len(parsed.get('experience', []))} experiences, "
@@ -219,7 +107,6 @@ async def main():
 
     mode = config.get("autonomy", {}).get("mode", "full")
     profile_name = "Ayush Singh Rana"
-
     try:
         with open("profile.yaml") as f:
             profile = yaml.safe_load(f)
@@ -242,21 +129,18 @@ async def main():
         pass
     log.detail(f"Database initialized — {db_count} applications")
 
-    asyncio.create_task(start_agents(config, log))
+    if "--test" in sys.argv:
+        asyncio.create_task(inject_test_jobs())
 
-    from api.services.scheduler import start_scheduler
-    await start_scheduler()
-    log.start("Scheduler started — Gmail scan every 15min, optimizer 2AM")
-
-    frontend_url = "http://localhost:5173"
     log.detail(f"API running → http://localhost:8000")
-    log.detail(f"Frontend → {frontend_url}")
+    log.detail(f"Frontend → http://localhost:5173")
 
     import webbrowser
-    webbrowser.open(frontend_url)
+    webbrowser.open("http://localhost:5173")
 
     log.start("NexApply ready")
 
+    from api.main import app
     config_uv = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="error")
     server = uvicorn.Server(config_uv)
     await server.serve()

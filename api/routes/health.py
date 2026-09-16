@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter
 from sqlalchemy import text
 
+from api.core import runtime
 from api.core.config import settings
 from api.db.database import SessionLocal
 
@@ -30,14 +31,9 @@ def health_check():
         pass
 
     return {
-        "status": "ok",
+        "status": "ok" if runtime.is_running() else "degraded",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "agents": {
-            "radar": "online",
-            "tailor": "online",
-            "fleet": "online",
-            "guard": "online",
-        },
+        "agents": runtime.get_agent_status(),
         "database": "ok" if db_ok else "unreachable",
         "redis": redis_ok,
         "groq": "configured" if settings.groq_api_key else "missing",
