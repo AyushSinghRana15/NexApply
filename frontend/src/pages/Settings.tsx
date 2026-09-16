@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useConfig } from "@/hooks/useQueries";
-import { toast } from "@/components/common/Toast";
+import { toast } from "@/stores/toast";
 import { updateConfig } from "@/api/client";
 import { Button } from "@/components/ui";
 import { Save } from "lucide-react";
@@ -45,40 +45,41 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
   );
 }
 
+function readNumber(value: unknown, fallback: number): number {
+  return typeof value === "number" ? value : fallback;
+}
+
+function buildForm(raw: Record<string, unknown>): SettingsForm {
+  const tailor = (raw.tailor ?? {}) as Record<string, unknown>;
+  const guard = (raw.guard ?? {}) as Record<string, unknown>;
+  const fleet = (raw.fleet ?? {}) as Record<string, unknown>;
+  const autonomy = (raw.autonomy ?? {}) as Record<string, unknown>;
+  const platforms = (raw.platforms ?? {}) as Record<string, boolean>;
+  return {
+    tailor: { min_match_score: readNumber(tailor.min_match_score, 70) },
+    guard: { review_timeout_seconds: readNumber(guard.review_timeout_seconds, 300) },
+    fleet: { human_delay_max: readNumber(fleet.human_delay_max, 0.8) },
+    autonomy: {
+      mode: autonomy.mode === "manual" ? "manual" : autonomy.mode === "supervised" ? "supervised" : "full",
+    },
+    platforms: { ...platforms },
+  };
+}
+
 export function Settings() {
   const { data: config, isLoading } = useConfig();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<SettingsForm>({
-    tailor: { min_match_score: 70 },
-    guard: { review_timeout_seconds: 300 },
-    fleet: { human_delay_max: 0.8 },
-    autonomy: { mode: "full" },
-    platforms: {},
-  });
+  const [form, setForm] = useState<SettingsForm>(() => buildForm((config ?? {}) as Record<string, unknown>));
+  const [prevConfig, setPrevConfig] = useState<Record<string, unknown> | undefined>(config as Record<string, unknown> | undefined);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  useEffect(() => {
-    if (config) {
-      const c: Record<string, any> = config as Record<string, any>;
-      setForm({
-        tailor: {
-          min_match_score: c?.tailor?.min_match_score ?? 70,
-        },
-        guard: {
-          review_timeout_seconds: c?.guard?.review_timeout_seconds ?? 300,
-        },
-        fleet: {
-          human_delay_max: c?.fleet?.human_delay_max ?? 0.8,
-        },
-        autonomy: {
-          mode: c?.autonomy?.mode === "manual" ? "manual" : c?.autonomy?.mode === "supervised" ? "supervised" : "full",
-        },
-        platforms: ({ ...(c?.platforms ?? {}) }),
-      });
-      setHasChanges(false);
-    }
-  }, [config]);
+  const currentConfig = (config ?? {}) as Record<string, unknown>;
+  if (currentConfig !== prevConfig) {
+    setPrevConfig(currentConfig);
+    setForm(buildForm(currentConfig));
+    setHasChanges(false);
+  }
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -87,8 +88,8 @@ export function Settings() {
       queryClient.invalidateQueries({ queryKey: ["config"] });
       setHasChanges(false);
       toast.getState().add("success", "Configuration saved");
-    } catch (err: any) {
-      toast.getState().add("error", err?.message || "Failed to save");
+    } catch (err: unknown) {
+      toast.getState().add("error", err instanceof Error ? err.message : "Failed to save");
     } finally {
       setIsSaving(false);
     }

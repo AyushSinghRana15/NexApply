@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
 
+const LINE_WIDTHS = [70, 85, 80, 90, 75];
+
 export function LoadingSkeleton({ className, lines = 1 }: { className?: string; lines?: number }) {
   return (
     <div className="space-y-3">
@@ -7,7 +9,7 @@ export function LoadingSkeleton({ className, lines = 1 }: { className?: string; 
         <div
           key={i}
           className={cn("h-4 rounded-xl animate-shimmer", className ?? "w-full")}
-          style={{ width: lines > 1 ? `${70 + Math.random() * 30}%` : "100%" }}
+          style={{ width: lines > 1 ? `${LINE_WIDTHS[i % LINE_WIDTHS.length]}%` : "100%" }}
         />
       ))}
     </div>

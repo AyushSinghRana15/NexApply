@@ -18,7 +18,7 @@ export function Resumes() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
 
-  const resumes = resumesData?.items ?? [];
+  const resumes = useMemo(() => resumesData?.items ?? [], [resumesData]);
   const categories = useMemo(() => ["all", ...new Set(resumes.map((r) => r.category))], [resumes]);
 
   const filtered = useMemo(() => {

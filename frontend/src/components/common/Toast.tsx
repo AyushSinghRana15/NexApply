@@ -1,32 +1,8 @@
-import { create } from "zustand";
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from "lucide-react";
+import { useToast } from "@/stores/toast";
 import { cn } from "@/lib/utils";
 
 type ToastType = "success" | "error" | "warning" | "info";
-
-interface ToastItem {
-  id: string;
-  type: ToastType;
-  message: string;
-}
-
-interface ToastStore {
-  toasts: ToastItem[];
-  add: (type: ToastType, message: string) => void;
-  remove: (id: string) => void;
-}
-
-export const useToast = create<ToastStore>((set) => ({
-  toasts: [],
-  add: (type, message) => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    set((s) => ({ toasts: [...s.toasts, { id, type, message }] }));
-    setTimeout(() => {
-      set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
-    }, 4000);
-  },
-  remove: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
-}));
 
 const icons: Record<ToastType, typeof CheckCircle> = {
   success: CheckCircle,
@@ -42,7 +18,7 @@ const colors: Record<ToastType, string> = {
   info: "border-blue-200 bg-blue-50 text-blue-600",
 };
 
-function ToastItem({ item }: { item: ToastItem }) {
+function ToastItem({ item }: { item: { id: string; type: ToastType; message: string } }) {
   const Icon = icons[item.type];
   return (
     <div
@@ -72,5 +48,3 @@ export function ToastContainer() {
     </div>
   );
 }
-
-export { useToast as toast };

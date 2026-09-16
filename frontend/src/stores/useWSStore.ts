@@ -1,9 +1,9 @@
 import { create } from "zustand";
-import type { ReviewPayload, AgentStatus, ActivityEvent, WSMessage } from "@/types";
+import type { ReviewPayload, ReviewPayloadInput, AgentStatus, ActivityEvent, WSMessage } from "@/types";
 
 let eventCounter = 0;
 
-function normalizeReview(payload: any): ReviewPayload {
+function normalizeReview(payload: ReviewPayloadInput): ReviewPayload {
   return {
     ...payload,
     keywords_injected: Array.isArray(payload.keywords_injected)
@@ -13,7 +13,7 @@ function normalizeReview(payload: any): ReviewPayload {
         : [],
     screenshot_path: payload.screenshot_path ?? payload.screenshot_url ?? "",
     location: payload.location ?? "",
-  };
+  } as ReviewPayload;
 }
 
 interface WSState {
@@ -243,7 +243,8 @@ export const useWSStore = create<WSState>((set, get) => ({
 
   clearCountdown: (jobId) =>
     set((s) => {
-      const { [jobId]: _, ...rest } = s.countdowns;
+      const rest = { ...s.countdowns };
+      delete rest[jobId];
       return { countdowns: rest };
     }),
 }));

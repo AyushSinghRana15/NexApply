@@ -8,7 +8,7 @@ export function WebSocketInit() {
   useEffect(() => {
     connect();
     return () => disconnect();
-  }, []);
+  }, [connect, disconnect]);
 
   return null;
 }

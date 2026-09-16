@@ -20,7 +20,8 @@ export function Apps() {
     queryFn: fetchCookieStatus,
   });
 
-  const platforms = (config as Record<string, any> | undefined)?.platforms ?? {};
+  const rawConfig = (config ?? {}) as Record<string, unknown>;
+  const platforms = (rawConfig.platforms ?? {}) as Record<string, boolean>;
 
   const entries = Object.keys(PLATFORM_INFO).map((key) => {
     const cfgEnabled = Boolean(platforms[key]);

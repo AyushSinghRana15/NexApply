@@ -3,7 +3,7 @@ import { Check, X, Edit3, ArrowLeft, ArrowRight, FileText, Image } from "lucide-
 import { useWSStore } from "@/stores/useWSStore";
 import { Button, Badge, ScoreBar } from "@/components/ui";
 import { useResumes } from "@/hooks/useQueries";
-import { useToast } from "@/components/common/Toast";
+import { useToast } from "@/stores/toast";
 import { matchScoreColor, cn } from "@/lib/utils";
 import type { ReviewPayload } from "@/types";
 
@@ -36,42 +36,176 @@ function CountdownBar({ timeLeft, total }: { timeLeft: number; total: number }) 
   );
 }
 
-export function Review() {
-  const { pendingReviews, removeReview, countdowns, sendDecision } = useWSStore();
+function ReviewCard({
+  review,
+  serverCountdown,
+  submitting,
+  onAction,
+}: {
+  review: ReviewPayload;
+  serverCountdown?: number;
+  submitting: string | null;
+  onAction: (action: string) => void;
+}) {
   const { data: resumesData } = useResumes();
-  const [index, setIndex] = useState(0);
   const [localCountdown, setLocalCountdown] = useState(TIMEOUT_SECONDS);
-  const [submitting, setSubmitting] = useState<string | null>(null);
   const [tab, setTab] = useState<"screenshot" | "resume">("screenshot");
 
-  const current = pendingReviews[index] as ReviewPayload | undefined;
-  const queueRemaining = pendingReviews.length - index - 1;
-  const serverCountdown = current ? countdowns[current.job_id] : undefined;
   const countdown = serverCountdown ?? localCountdown;
 
   useEffect(() => {
-    if (index >= pendingReviews.length && pendingReviews.length > 0) {
-      setIndex(pendingReviews.length - 1);
-    }
-  }, [pendingReviews.length, index]);
-
-  useEffect(() => {
-    setLocalCountdown(TIMEOUT_SECONDS);
-    setTab("screenshot");
-    if (!current) return;
     const interval = setInterval(() => {
       setLocalCountdown((c) => (c > 0 ? c - 1 : 0));
     }, 1000);
     return () => clearInterval(interval);
-  }, [current?.job_id]);
+  }, []);
 
   const currentResume = useMemo(() => {
-    if (!resumesData?.items || !current) return null;
-    return resumesData.items.find((r) => r.name === current.resume_variant);
-  }, [resumesData, current]);
+    if (!resumesData?.items) return null;
+    return resumesData.items.find((r) => r.name === review.resume_variant);
+  }, [resumesData, review.resume_variant]);
+
+  return (
+    <div className="bg-white rounded-2xl border border-border overflow-hidden soft-shadow animate-fade-in">
+      <div className="grid grid-cols-1 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-border">
+        <div className="lg:col-span-3 p-6 space-y-4">
+          <Badge>{review.platform}</Badge>
+
+          <div>
+            <h2 className="text-xl font-bold leading-tight">{review.title}</h2>
+            <p className="text-text-secondary mt-1">
+              {review.company}
+              {review.location && <span className="text-text-muted"> &middot; {review.location}</span>}
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-muted">Match Score</span>
+              <span className={cn("text-sm font-semibold", matchScoreColor(review.match_score))}>
+                {review.match_score}%
+              </span>
+            </div>
+            <ScoreBar score={review.match_score} size="lg" />
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {(review.keywords_injected ?? []).map((kw) => (
+              <span
+                key={kw}
+                className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 text-text-secondary"
+              >
+                {kw}
+              </span>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="default">{review.resume_variant}</Badge>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2 flex flex-col">
+          <div className="flex border-b border-border">
+            {(["screenshot", "resume"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors",
+                  tab === t
+                    ? "text-accent border-b-2 border-accent"
+                    : "text-text-muted hover:text-text-secondary"
+                )}
+              >
+                {t === "screenshot" ? <Image size={14} /> : <FileText size={14} />}
+                {t === "screenshot" ? "Screenshot" : "Resume"}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 min-h-[300px] max-h-[500px] overflow-auto p-4">
+            {tab === "screenshot" ? (
+              review.screenshot_path ? (
+                <a
+                  href={`/screenshots/${review.screenshot_path.split("/").pop()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <img
+                    src={`/screenshots/${review.screenshot_path.split("/").pop()}`}
+                    alt="Form screenshot"
+                    className="rounded-xl border border-border w-full object-cover bg-gray-100 hover:opacity-90 transition-opacity"
+                  />
+                </a>
+              ) : (
+                <div className="flex items-center justify-center h-full text-text-muted text-sm">
+                  No screenshot
+                </div>
+              )
+            ) : (
+              <pre className="text-sm text-text-secondary font-mono whitespace-pre-wrap leading-relaxed">
+                {currentResume?.content ?? `Resume: ${review.resume_variant}\nKeywords: ${(review.keywords_injected ?? []).join(", ")}\nScore: ${review.match_score}%`}
+              </pre>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-border p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onAction("PREV")}
+              className="p-2 rounded-xl hover:bg-surface-hover text-text-muted disabled:opacity-30 transition-colors"
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <span className="text-xs text-text-muted tabular-nums min-w-[3rem] text-center"></span>
+            <button
+              onClick={() => onAction("NEXT")}
+              className="p-2 rounded-xl hover:bg-surface-hover text-text-muted disabled:opacity-30 transition-colors"
+            >
+              <ArrowRight size={16} />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button variant="danger" size="sm" onClick={() => onAction("SKIP")} disabled={!!submitting}>
+              <X size={14} /> Skip (S)
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => onAction("EDIT")} disabled={!!submitting}>
+              <Edit3 size={14} /> Edit (E)
+            </Button>
+            <Button variant="primary" size="sm" onClick={() => onAction("APPROVE")} disabled={!!submitting}>
+              <Check size={14} /> Approve (A)
+            </Button>
+          </div>
+        </div>
+        <CountdownBar timeLeft={countdown} total={TIMEOUT_SECONDS} />
+      </div>
+    </div>
+  );
+}
+
+export function Review() {
+  const { pendingReviews, removeReview, countdowns, sendDecision } = useWSStore();
+  const [index, setIndex] = useState(0);
+  const [submitting, setSubmitting] = useState<string | null>(null);
+
+  const safeIndex = pendingReviews.length === 0 ? -1 : Math.min(index, pendingReviews.length - 1);
+  const current = safeIndex >= 0 ? pendingReviews[safeIndex] : undefined;
+  const queueRemaining = pendingReviews.length - safeIndex - 1;
 
   const handleAction = useCallback(async (action: string) => {
     if (!current || submitting) return;
+    if (action === "PREV" || action === "NEXT") {
+      setIndex((i) =>
+        action === "PREV" ? Math.max(0, i - 1) : Math.min(pendingReviews.length - 1, i + 1)
+      );
+      return;
+    }
     setSubmitting(action);
     try {
       const ok = sendDecision(current.job_id, action);
@@ -81,13 +215,13 @@ export function Review() {
           action === "APPROVE" ? "Approved & submitted" : action === "SKIP" ? "Skipped" : "Marked for edit"
         );
         removeReview(current.job_id);
-        if (index >= pendingReviews.length - 1 && index > 0) setIndex((i) => i - 1);
+        setIndex((i) => Math.min(i, Math.max(0, pendingReviews.length - 2)));
       } else {
         useToast.getState().add("error", "Not connected — decision not sent");
       }
     } catch { useToast.getState().add("error", "Failed to submit"); }
     setSubmitting(null);
-  }, [current, submitting, index, pendingReviews, sendDecision, removeReview]);
+  }, [current, submitting, pendingReviews.length, sendDecision, removeReview]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -133,135 +267,18 @@ export function Review() {
             <span className="text-sm text-text-muted">{queueRemaining} more</span>
           )}
         </div>
+        <span className="text-xs text-text-muted tabular-nums">
+          {safeIndex + 1}/{pendingReviews.length}
+        </span>
       </div>
 
-      <div
+      <ReviewCard
         key={current.job_id}
-        className="bg-white rounded-2xl border border-border overflow-hidden soft-shadow animate-fade-in"
-      >
-        <div className="grid grid-cols-1 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-border">
-          <div className="lg:col-span-3 p-6 space-y-4">
-            <Badge>{current.platform}</Badge>
-
-            <div>
-              <h2 className="text-xl font-bold leading-tight">{current.title}</h2>
-              <p className="text-text-secondary mt-1">
-                {current.company}
-                {current.location && <span className="text-text-muted"> &middot; {current.location}</span>}
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-text-muted">Match Score</span>
-                <span className={cn("text-sm font-semibold", matchScoreColor(current.match_score))}>
-                  {current.match_score}%
-                </span>
-              </div>
-              <ScoreBar score={current.match_score} size="lg" />
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              {(current.keywords_injected ?? []).map((kw: string) => (
-                <span
-                  key={kw}
-                  className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 text-text-secondary"
-                >
-                  {kw}
-                </span>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="default">{current.resume_variant}</Badge>
-            </div>
-          </div>
-
-          <div className="lg:col-span-2 flex flex-col">
-            <div className="flex border-b border-border">
-              {(["screenshot", "resume"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors",
-                    tab === t
-                      ? "text-accent border-b-2 border-accent"
-                      : "text-text-muted hover:text-text-secondary"
-                  )}
-                >
-                  {t === "screenshot" ? <Image size={14} /> : <FileText size={14} />}
-                  {t === "screenshot" ? "Screenshot" : "Resume"}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex-1 min-h-[300px] max-h-[500px] overflow-auto p-4">
-              {tab === "screenshot" ? (
-                current.screenshot_path ? (
-                  <a
-                    href={`/screenshots/${current.screenshot_path.split("/").pop()}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    <img
-                      src={`/screenshots/${current.screenshot_path.split("/").pop()}`}
-                      alt="Form screenshot"
-                      className="rounded-xl border border-border w-full object-cover bg-gray-100 hover:opacity-90 transition-opacity"
-                    />
-                  </a>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-text-muted text-sm">
-                    No screenshot
-                  </div>
-                )
-              ) : (
-                <pre className="text-sm text-text-secondary font-mono whitespace-pre-wrap leading-relaxed">
-                  {currentResume?.content ?? `Resume: ${current.resume_variant}\nKeywords: ${(current.keywords_injected ?? []).join(", ")}\nScore: ${current.match_score}%`}
-                </pre>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-border p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIndex((i) => Math.max(0, i - 1))}
-                disabled={index === 0}
-                className="p-2 rounded-xl hover:bg-surface-hover text-text-muted disabled:opacity-30 transition-colors"
-              >
-                <ArrowLeft size={16} />
-              </button>
-              <span className="text-xs text-text-muted tabular-nums min-w-[3rem] text-center">
-                {index + 1}/{pendingReviews.length}
-              </span>
-              <button
-                onClick={() => setIndex((i) => Math.min(pendingReviews.length - 1, i + 1))}
-                disabled={index >= pendingReviews.length - 1}
-                className="p-2 rounded-xl hover:bg-surface-hover text-text-muted disabled:opacity-30 transition-colors"
-              >
-                <ArrowRight size={16} />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button variant="danger" size="sm" onClick={() => handleAction("SKIP")} disabled={!!submitting}>
-                <X size={14} /> Skip (S)
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => handleAction("EDIT")} disabled={!!submitting}>
-                <Edit3 size={14} /> Edit (E)
-              </Button>
-              <Button variant="primary" size="sm" onClick={() => handleAction("APPROVE")} disabled={!!submitting}>
-                <Check size={14} /> Approve (A)
-              </Button>
-            </div>
-          </div>
-          <CountdownBar timeLeft={countdown} total={TIMEOUT_SECONDS} />
-        </div>
-      </div>
+        review={current}
+        serverCountdown={countdowns[current.job_id]}
+        submitting={submitting}
+        onAction={handleAction}
+      />
     </div>
   );
 }
