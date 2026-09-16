@@ -7,18 +7,23 @@ import { Button } from "@/components/ui";
 import { Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Platforms = Record<string, { enabled?: boolean; headless?: boolean; max_concurrent?: number; cookies?: string[] }>;
-
-interface AppConfig {
-  min_match_score?: number;
-  max_applications_per_run?: number;
-  review_timeout_seconds?: number;
-  auto_apply_enabled?: boolean;
-  application_delay_seconds?: number;
-  platforms?: Platforms;
-  agent_wakeup_interval_seconds?: number;
-  notification?: Record<string, boolean>;
+interface SettingsForm {
+  tailor: { min_match_score: number };
+  guard: { review_timeout_seconds: number };
+  fleet: { human_delay_max: number };
+  autonomy: { mode: "full" | "supervised" | "manual" };
+  platforms: Record<string, boolean>;
 }
+
+const PLATFORM_KEYS = ["indeed", "glassdoor", "foundit", "internshala", "naukri"];
+
+const PLATFORM_LABELS: Record<string, string> = {
+  indeed: "Indeed",
+  glassdoor: "Glassdoor",
+  foundit: "Foundit",
+  internshala: "Internshala",
+  naukri: "Naukri",
+};
 
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
@@ -43,31 +48,42 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
 export function Settings() {
   const { data: config, isLoading } = useConfig();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<AppConfig>({});
-  const [platforms, setPlatforms] = useState<Platforms>({});
+  const [form, setForm] = useState<SettingsForm>({
+    tailor: { min_match_score: 70 },
+    guard: { review_timeout_seconds: 300 },
+    fleet: { human_delay_max: 0.8 },
+    autonomy: { mode: "full" },
+    platforms: {},
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     if (config) {
-      setForm(config as AppConfig);
-      setPlatforms((config as AppConfig).platforms ?? {});
+      const c: Record<string, any> = config as Record<string, any>;
+      setForm({
+        tailor: {
+          min_match_score: c?.tailor?.min_match_score ?? 70,
+        },
+        guard: {
+          review_timeout_seconds: c?.guard?.review_timeout_seconds ?? 300,
+        },
+        fleet: {
+          human_delay_max: c?.fleet?.human_delay_max ?? 0.8,
+        },
+        autonomy: {
+          mode: c?.autonomy?.mode === "manual" ? "manual" : c?.autonomy?.mode === "supervised" ? "supervised" : "full",
+        },
+        platforms: ({ ...(c?.platforms ?? {}) }),
+      });
       setHasChanges(false);
     }
   }, [config]);
 
-  const platformsConfig: { key: string; label: string }[] = [
-    { key: "indeed", label: "Indeed" },
-    { key: "naukri", label: "Naukri" },
-    { key: "glassdoor", label: "Glassdoor" },
-    { key: "foundit", label: "Foundit" },
-    { key: "internshala", label: "Internshala" },
-  ];
-
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await updateConfig({ ...form, platforms });
+      await updateConfig(form as unknown as Record<string, unknown>);
       queryClient.invalidateQueries({ queryKey: ["config"] });
       setHasChanges(false);
       toast.getState().add("success", "Configuration saved");
@@ -81,6 +97,8 @@ export function Settings() {
   if (isLoading) {
     return <div className="text-center py-20 text-text-muted text-sm">Loading configuration...</div>;
   }
+
+  const autoApply = form.autonomy.mode === "full";
 
   return (
     <div className="max-w-[900px] mx-auto space-y-6">
@@ -99,86 +117,84 @@ export function Settings() {
 
           <div>
             <label className="text-sm font-medium block mb-2">
-              Min match score: <span className="text-accent font-bold">{form.min_match_score ?? 60}%</span>
+              Min match score: <span className="text-accent font-bold">{form.tailor.min_match_score}%</span>
             </label>
             <input
               type="range"
               min={0}
               max={100}
-              value={form.min_match_score ?? 60}
-              onChange={(e) => { setForm({ ...form, min_match_score: +e.target.value }); setHasChanges(true); }}
+              value={form.tailor.min_match_score}
+              onChange={(e) => { setForm((f) => ({ ...f, tailor: { ...f.tailor, min_match_score: +e.target.value } })); setHasChanges(true); }}
               className="w-full accent-accent h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer"
             />
           </div>
 
           <div>
             <label className="text-sm font-medium block mb-2">
-              Review timeout: <span className="text-accent font-bold">{form.review_timeout_seconds ?? 300}s</span>
+              Review timeout: <span className="text-accent font-bold">{form.guard.review_timeout_seconds}s</span>
             </label>
             <input
               type="range"
               min={60}
               max={1200}
               step={60}
-              value={form.review_timeout_seconds ?? 300}
-              onChange={(e) => { setForm({ ...form, review_timeout_seconds: +e.target.value }); setHasChanges(true); }}
+              value={form.guard.review_timeout_seconds}
+              onChange={(e) => { setForm((f) => ({ ...f, guard: { ...f.guard, review_timeout_seconds: +e.target.value } })); setHasChanges(true); }}
               className="w-full accent-accent h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer"
             />
           </div>
 
           <div>
             <label className="text-sm font-medium block mb-2">
-              App delay: <span className="text-accent font-bold">{form.application_delay_seconds ?? 5}s</span>
+              Human-like delay: <span className="text-accent font-bold">{form.fleet.human_delay_max}s</span>
             </label>
             <input
               type="range"
-              min={0}
-              max={30}
-              value={form.application_delay_seconds ?? 5}
-              onChange={(e) => { setForm({ ...form, application_delay_seconds: +e.target.value }); setHasChanges(true); }}
+              min={0.1}
+              max={5}
+              step={0.1}
+              value={form.fleet.human_delay_max}
+              onChange={(e) => { setForm((f) => ({ ...f, fleet: { ...f.fleet, human_delay_max: +e.target.value } })); setHasChanges(true); }}
               className="w-full accent-accent h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer"
             />
           </div>
 
           <Toggle
-            checked={form.auto_apply_enabled ?? false}
-            onChange={(v) => { setForm({ ...form, auto_apply_enabled: v }); setHasChanges(true); }}
-            label="Auto-apply"
+            checked={autoApply}
+            onChange={(v) => { setForm((f) => ({ ...f, autonomy: { mode: v ? "full" : "supervised" } })); setHasChanges(true); }}
+            label="Auto-apply (full autonomy)"
           />
+          <p className="text-xs text-text-muted">
+            Off = supervised mode — every application pauses for human review.
+          </p>
         </div>
 
         <div className="bg-white rounded-2xl border border-border p-5 space-y-5 soft-shadow animate-fade-in">
           <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">Platforms</h3>
-          {platformsConfig.map(({ key, label }) => {
-            const p = platforms[key] ?? {};
+          {PLATFORM_KEYS.map((key) => {
+            const enabled = form.platforms[key] ?? false;
             return (
               <div key={key} className="flex items-center justify-between py-2 border-b border-border-light last:border-0">
                 <div className="flex items-center gap-3">
-                  <span className="font-medium text-sm">{label}</span>
-                  <div className="flex gap-1.5 text-[10px] font-medium uppercase tracking-wide">
-                    <span className={p.headless !== false ? "text-green-500 bg-green-50 px-2 py-0.5 rounded-lg" : "text-gray-400 bg-gray-100 px-2 py-0.5 rounded-lg"}>
-                      {p.headless !== false ? "headless" : "headed"}
-                    </span>
-                    <span className="text-text-muted bg-gray-100 px-2 py-0.5 rounded-lg">
-                      max {p.max_concurrent ?? 1}
-                    </span>
-                  </div>
+                  <span className="font-medium text-sm">{PLATFORM_LABELS[key] ?? key}</span>
+                  <span className={cn(
+                    "text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-lg",
+                    enabled ? "text-green-600 bg-green-50" : "text-gray-400 bg-gray-100"
+                  )}>
+                    {enabled ? "on" : "off"}
+                  </span>
                 </div>
-                <div
-                  onClick={() => { setPlatforms({ ...platforms, [key]: { ...p, enabled: !p.enabled } }); setHasChanges(true); }}
-                  className={cn(
-                    "w-10 h-5 rounded-full relative transition-colors cursor-pointer",
-                    p.enabled ? "bg-accent" : "bg-gray-300"
-                  )}
-                >
-                  <div className={cn(
-                    "absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform",
-                    p.enabled ? "translate-x-5" : "translate-x-0.5"
-                  )} />
-                </div>
+                <Toggle
+                  checked={enabled}
+                  onChange={(v) => { setForm((f) => ({ ...f, platforms: { ...f.platforms, [key]: v } })); setHasChanges(true); }}
+                  label=""
+                />
               </div>
             );
           })}
+          <p className="text-xs text-text-muted">
+            Only platforms with an enabled watcher + worker + cookies will process jobs.
+          </p>
         </div>
       </div>
     </div>

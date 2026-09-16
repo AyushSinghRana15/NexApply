@@ -1,188 +1,113 @@
-import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { fetchCookieStatus } from "@/api/client";
 import { useConfig } from "@/hooks/useQueries";
-import { toast } from "@/components/common/Toast";
-import { updateConfig } from "@/api/client";
-import { Button } from "@/components/ui";
-import { CheckCircle, XCircle, Plus, X, Save } from "lucide-react";
+import { Badge, Button } from "@/components/ui";
+import { CheckCircle, XCircle, Info, Terminal, RefreshCw, Link as LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface AppConfig {
-  platforms?: Record<string, { enabled?: boolean; cookie_valid?: boolean; cookies?: string[]; headless?: boolean; max_concurrent?: number }>;
-}
-
-const PLATFORM_INFO: Record<string, { label: string; placeholder: string }> = {
-  indeed: { label: "Indeed", placeholder: "user@example.com" },
-  naukri: { label: "Naukri", placeholder: "user@example.com" },
-  glassdoor: { label: "Glassdoor", placeholder: "user@example.com" },
-  foundit: { label: "Foundit", placeholder: "user@example.com" },
-  internshala: { label: "Internshala", placeholder: "user@example.com" },
+const PLATFORM_INFO: Record<string, { label: string; file: string }> = {
+  indeed: { label: "Indeed", file: "cookies/indeed_cookies.json" },
+  naukri: { label: "Naukri", file: "cookies/naukri_cookies.json" },
+  internshala: { label: "Internshala", file: "cookies/internshala_cookies.json" },
+  glassdoor: { label: "Glassdoor", file: "cookies/glassdoor_cookies.json" },
+  foundit: { label: "Foundit", file: "cookies/foundit_cookies.json" },
 };
 
 export function Apps() {
   const { data: config } = useConfig();
-  const queryClient = useQueryClient();
-  const [loading, setLoading] = useState<Record<string, boolean>>({});
-  const [editingCookies, setEditingCookies] = useState<Record<string, string[]>>({});
-  const [showAddPlatform, setShowAddPlatform] = useState(false);
-  const [newPlatformKey, setNewPlatformKey] = useState("");
-  const [newPlatformLabel, setNewPlatformLabel] = useState("");
+  const { data: status, refetch, isFetching } = useQuery({
+    queryKey: ["cookies/status"],
+    queryFn: fetchCookieStatus,
+  });
 
-  const platforms = (config as AppConfig | undefined)?.platforms;
+  const platforms = (config as Record<string, any> | undefined)?.platforms ?? {};
 
-  useEffect(() => {
-    if (platforms) {
-      const initial: Record<string, string[]> = {};
-      Object.entries(platforms).forEach(([key, val]) => {
-        initial[key] = val.cookies ?? [];
-      });
-      setEditingCookies(initial);
-    }
-  }, [platforms]);
-
-  const handleSaveCookies = async (platformKey: string) => {
-    setLoading((p) => ({ ...p, [`${platformKey}_save`]: true }));
-    try {
-      const newPlatforms = { ...platforms, [platformKey]: { ...(platforms?.[platformKey] ?? {}), cookies: editingCookies[platformKey] ?? [] } };
-      await updateConfig({ platforms: newPlatforms });
-      queryClient.invalidateQueries({ queryKey: ["config"] });
-      toast.getState().add("success", `${platformKey} cookies saved`);
-    } catch (e: any) {
-      toast.getState().add("error", e?.message || "Failed to save cookies");
-    } finally {
-      setLoading((p) => ({ ...p, [`${platformKey}_save`]: false }));
-    }
-  };
-
-  const handleAddPlatform = async () => {
-    if (!newPlatformKey.trim()) return;
-    const key = newPlatformKey.trim().toLowerCase().replace(/\s+/g, "_");
-    const newPlatforms = {
-      ...platforms,
-      [key]: { enabled: true, cookies: [], headless: true, max_concurrent: 1 },
-    };
-    try {
-      await updateConfig({ platforms: newPlatforms });
-      queryClient.invalidateQueries({ queryKey: ["config"] });
-      setEditingCookies((p) => ({ ...p, [key]: [] }));
-      setNewPlatformKey("");
-      setNewPlatformLabel("");
-      setShowAddPlatform(false);
-      toast.getState().add("success", `Added platform: ${key}`);
-    } catch {
-      toast.getState().add("error", "Failed to add platform");
-    }
-  };
-
-  const handleDeletePlatform = async (platformKey: string) => {
-    if (!window.confirm(`Delete ${platformKey}?`)) return;
-    const newPlatforms = { ...platforms };
-    delete newPlatforms[platformKey];
-    try {
-      await updateConfig({ platforms: newPlatforms });
-      queryClient.invalidateQueries({ queryKey: ["config"] });
-      toast.getState().add("success", `Deleted ${platformKey}`);
-    } catch {
-      toast.getState().add("error", "Failed to delete platform");
-    }
-  };
+  const entries = Object.keys(PLATFORM_INFO).map((key) => {
+    const cfgEnabled = Boolean(platforms[key]);
+    const s = status?.platforms?.[key];
+    return { key, ...PLATFORM_INFO[key], cfgEnabled, ...(s ?? {}) };
+  });
 
   return (
-    <div className="max-w-[1100px] mx-auto space-y-6">
+    <div className="max-w-[900px] mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">App Logins</h1>
-        <Button variant="primary" size="sm" onClick={() => setShowAddPlatform(true)}>
-          <Plus size={14} /> Add Platform
+        <Button variant="secondary" size="sm" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw size={14} className={cn(isFetching && "animate-spin")} /> Refresh
         </Button>
       </div>
 
-      {showAddPlatform && (
-        <div className="bg-white rounded-2xl border border-border p-5 soft-shadow animate-fade-in space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Add New Platform</h3>
-            <button onClick={() => setShowAddPlatform(false)} className="text-text-muted hover:text-text-primary transition-colors">
-              <X size={16} />
-            </button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-text-muted block mb-1">Platform key (lowercase, underscore)</label>
-              <input
-                type="text"
-                value={newPlatformKey}
-                onChange={(e) => setNewPlatformKey(e.target.value)}
-                placeholder="e.g. linkedin, wellfound, cutshort"
-                className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-xl focus:ring-2 focus:ring-accent/20 outline-none"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-text-muted block mb-1">Display label</label>
-              <input
-                type="text"
-                value={newPlatformLabel}
-                onChange={(e) => setNewPlatformLabel(e.target.value)}
-                placeholder="e.g. LinkedIn"
-                className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-xl focus:ring-2 focus:ring-accent/20 outline-none"
-              />
-            </div>
-          </div>
-          <Button variant="primary" size="sm" onClick={handleAddPlatform} disabled={!newPlatformKey.trim()}>
-            <Plus size={14} /> Add
-          </Button>
+      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3 items-start">
+        <Info size={16} className="text-blue-500 mt-0.5 shrink-0" />
+        <div className="text-sm text-text-secondary space-y-1.5">
+          <p>
+            Login to each platform once in a browser, then save the session cookies. NexApply reuses
+            these cookies for every application — it never re-logs-in mid-run.
+          </p>
+          <p className="font-mono text-xs text-text-muted">
+            python3 scripts/save_cookies.py indeed
+          </p>
+          <p className="text-xs text-text-muted">
+            Enable/disable platforms in the Settings page.
+          </p>
         </div>
-      )}
+      </div>
 
-      {Object.entries(PLATFORM_INFO).map(([key, info]) => {
-        const p = platforms?.[key];
-        const isCookieValid = p?.cookie_valid ?? false;
-        const isSaving = loading[`${key}_save`] ?? false;
-
-        return (
-          <div key={key} className="bg-white rounded-2xl border border-border p-5 soft-shadow space-y-4 animate-fade-in">
-            <div className="flex items-center justify-between">
+      <div className="bg-white rounded-2xl border border-border divide-y divide-border soft-shadow">
+        {entries.map(({ key, label, file, cfgEnabled, loaded, last_captured, enabled }) => {
+          const platformEnabled = cfgEnabled && Boolean(enabled);
+          return (
+            <div key={key} className="p-5 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold">{info.label}</span>
-                <span className={cn(
-                  "text-xs font-medium px-2.5 py-0.5 rounded-lg flex items-center gap-1",
-                  isCookieValid ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"
-                )}>
-                  {isCookieValid ? <CheckCircle size={12} /> : <XCircle size={12} />}
-                  {isCookieValid ? "Session Active" : "No Session"}
-                </span>
+                <span className="font-semibold text-sm">{label}</span>
+                <div className="hidden sm:flex items-center gap-1.5 text-text-muted text-xs">
+                  <LinkIcon size={12} />
+                  {file}
+                </div>
               </div>
-              <button
-                onClick={() => handleDeletePlatform(key)}
-                className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors"
-              >
-                Delete
-              </button>
-            </div>
 
-            <div>
-              <label className="text-xs font-medium text-text-muted block mb-1">Cookies (one per line)</label>
-              <textarea
-                value={(editingCookies[key] ?? []).join("\n")}
-                onChange={(e) => setEditingCookies((prev) => ({
-                  ...prev,
-                  [key]: e.target.value.split("\n").filter((s) => s.trim()),
-                }))}
-                placeholder={"sessionid=abc123\ncsrftoken=xyz789"}
-                rows={5}
-                className="w-full px-3 py-2 text-sm font-mono bg-surface border border-border rounded-xl focus:ring-2 focus:ring-accent/20 outline-none"
-              />
-            </div>
+              <div className="flex items-center gap-2">
+                {!platformEnabled && <Badge variant="warning">disabled</Badge>}
+                {platformEnabled && loaded && (
+                  <Badge variant="success">
+                    <CheckCircle size={12} /> Session Active
+                  </Badge>
+                )}
+                {platformEnabled && !loaded && (
+                  <Badge variant="danger">
+                    <XCircle size={12} /> No Session
+                  </Badge>
+                )}
+              </div>
 
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => handleSaveCookies(key)}
-              disabled={isSaving}
-            >
-              <Save size={14} /> {isSaving ? "Saving..." : "Save Cookies"}
-            </Button>
-          </div>
-        );
-      })}
+              <div className="text-right text-xs text-text-muted hidden md:block">
+                {last_captured
+                  ? `Saved ${new Date(last_captured).toLocaleDateString()} ${new Date(last_captured).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                  : platformEnabled
+                    ? "Capture cookies to enable"
+                    : "Disabled in config"}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="bg-surface rounded-2xl border border-border p-5 space-y-3 soft-shadow">
+        <div className="flex items-center gap-2">
+          <Terminal size={16} className="text-accent" />
+          <h3 className="text-sm font-semibold">Capture cookies (CLI)</h3>
+        </div>
+        <pre className="text-xs font-mono bg-gray-900 text-gray-100 rounded-xl p-4 overflow-x-auto leading-relaxed">
+{`# 1. Log in to the platform in the automated browser
+python3 scripts/save_cookies.py indeed
+
+# 2. Save a new cookie file for another platform
+python3 scripts/save_cookies.py naukri
+python3 scripts/save_cookies.py internshala
+
+# Cookies are stored in cookies/<platform>_cookies.json`}
+        </pre>
+      </div>
     </div>
   );
 }

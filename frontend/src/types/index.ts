@@ -166,11 +166,9 @@ export interface ActivityLogEntry {
 export type PlatformName = "naukri" | "indeed" | "glassdoor" | "foundit" | "internshala";
 
 export interface CookieStatus {
-  platform: PlatformName;
-  label: string;
-  description: string;
+  enabled: boolean;
   loaded: boolean;
-  last_captured?: string;
+  last_captured?: string | null;
 }
 
 export type ReviewPayloadInput = Partial<ReviewPayload> & {

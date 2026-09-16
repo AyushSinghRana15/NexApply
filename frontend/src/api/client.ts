@@ -136,18 +136,8 @@ export async function clearApplications(): Promise<void> {
   await api.delete("/applications");
 }
 
-export async function fetchCookieStatus(): Promise<{ items: CookieStatus[] }> {
+export async function fetchCookieStatus(): Promise<{ platforms: Record<string, CookieStatus> }> {
   const { data } = await api.get("/cookies/status");
-  return data;
-}
-
-export async function captureCookies(platform: string): Promise<{ success: boolean; message: string }> {
-  const { data } = await api.post("/cookies/capture", { platform });
-  return data;
-}
-
-export async function clearCookies(platform: string): Promise<{ success: boolean; message: string }> {
-  const { data } = await api.post("/cookies/clear", { platform });
   return data;
 }
 

@@ -13,7 +13,7 @@ from api.core import runtime
 from api.db.database import Base, engine
 from api.middleware.error_handler import setup_error_handlers
 from api.middleware.logging import LoggingMiddleware
-from api.routes import applications, config, health, jobs, logs, resumes, stats, ws
+from api.routes import applications, config, cookies, health, jobs, logs, resumes, stats, ws
 
 os.makedirs("logs", exist_ok=True)
 
@@ -77,6 +77,7 @@ app.include_router(applications.router)
 app.include_router(stats.router)
 app.include_router(resumes.router)
 app.include_router(config.router)
+app.include_router(cookies.router)
 app.include_router(ws.router)
 app.include_router(logs.router)
 
