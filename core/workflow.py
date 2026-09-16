@@ -1,4 +1,3 @@
-import importlib
 import json
 import os
 from datetime import datetime, timezone
@@ -260,20 +259,13 @@ async def apply_job(state: PipelineState, config=None) -> dict:
 
     _log.applying(f"{result.title} @ {result.company}", platform)
 
-    worker_map = {
-        "indeed": ("workers.indeed", "IndeedWorker"),
-        "naukri": ("workers.naukri", "NaukriWorker"),
-        "internshala": ("workers.internshala", "InternshalaWorker"),
-    }
+    from workers import get_worker_class
 
-    entry = worker_map.get(platform)
-    if not entry:
-        _log.warn(f"Unknown platform: {platform}")
+    cls = get_worker_class(platform)
+    if not cls:
+        _log.warn(f"Unknown or unsupported platform: {platform}")
         return {"application_payload": None, "final_status": "SKIPPED"}
 
-    mod_name, cls_name = entry
-    mod = importlib.import_module(mod_name)
-    cls = getattr(mod, cls_name)
     worker = cls(cfg)
 
     auto_submit = mode == "full"

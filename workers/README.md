@@ -1,14 +1,17 @@
 # `workers/` — Platform-Specific Form Fillers
 
-Each worker extends `BaseWorker` and implements the platform-specific application form flow. Workers are instantiated by `ApplyFleet` in `core/fleet.py`.
+Each worker extends `BaseWorker` and implements the platform-specific application form flow. Workers are resolved through the `PLATFORM_HANDLERS` registry in `workers/__init__.py` via `get_worker_class(platform)` — used by `ApplyFleet` (`core/fleet.py`) and the LangGraph pipeline (`core/workflow.py`).
 
 ```
 workers/
+├── __init__.py    # PLATFORM_HANDLERS registry + get_worker_class()
 ├── base.py         # BaseWorker — shared form-filling engine for all platforms
 ├── indeed.py       # IndeedWorker — Indeed Apply flow
 ├── naukri.py       # NaukriWorker — Naukri modal apply
 └── internshala.py  # InternshalaWorker — Internshala form apply
 ```
+
+To register a new platform, add an entry to `PLATFORM_HANDLERS` in `__init__.py`.
 
 ---
 

@@ -93,26 +93,13 @@ class ApplyFleet:
 
             self.log.applying(f"{result.title} @ {result.company}", platform)
 
-            worker_map = {
-                "indeed": "IndeedWorker",
-                "naukri": "NaukriWorker",
-                "internshala": "InternshalaWorker",
-            }
-            mod_map = {
-                "indeed": "workers.indeed",
-                "naukri": "workers.naukri",
-                "internshala": "workers.internshala",
-            }
+            from workers import get_worker_class
 
-            mod_name = mod_map.get(platform)
-            cls_name = worker_map.get(platform)
-            if not mod_name or not cls_name:
-                self.log.warn(f"Unknown platform: {platform}")
+            cls = get_worker_class(platform)
+            if not cls:
+                self.log.warn(f"Unknown or unsupported platform: {platform}")
                 return
 
-            import importlib
-            mod = importlib.import_module(mod_name)
-            cls = getattr(mod, cls_name)
             worker = cls(self.cfg)
 
             auto_submit = self._mode == "full"
