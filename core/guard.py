@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 from datetime import datetime, timezone
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from core.logger import Logger
 from core.models import ApplicationPayload
@@ -11,34 +11,9 @@ from core.queue import JobQueue
 LOGS_FILE = "logs/applications.jsonl"
 
 
-class WSManager:
-
-    def __init__(self):
-        self._connections: set = set()
-
-    async def connect(self, ws):
-        self._connections.add(ws)
-
-    async def disconnect(self, ws):
-        self._connections.discard(ws)
-
-    async def broadcast(self, message: dict):
-        dead = set()
-        for ws in self._connections:
-            try:
-                await ws.send_json(message)
-            except Exception:
-                dead.add(ws)
-        self._connections -= dead
-
-    @property
-    def count(self) -> int:
-        return len(self._connections)
-
-
 class GuardAgent:
 
-    def __init__(self, config: dict, input_queue: JobQueue, ws_manager: WSManager, save_cb=None):
+    def __init__(self, config: dict, input_queue: JobQueue, ws_manager: Any, save_cb=None):
         self.cfg = config
         self.input_queue = input_queue
         self.ws_manager = ws_manager

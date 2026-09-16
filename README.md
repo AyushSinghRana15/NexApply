@@ -141,16 +141,19 @@ python3 scripts/save_cookies.py indeed
 python3 scripts/save_cookies.py naukri
 python3 scripts/save_cookies.py internshala
 
-# Run it
-python3 main.py
+# Run it (backend API + agents + scheduler)
+python3 run.py
+
+# Or the quick way — backend + frontend together
+./run.sh
 ```
 
-The review dashboard opens at `http://localhost:8000`. When a job is ready for review, a card appears with the job details + a screenshot of the filled form. Press **A** to approve, **S** to skip.
+The review dashboard opens at `http://localhost:5173`. When a job is ready for review, a card appears with the job details + a screenshot of the filled form. Press **Approve** / **Skip** to decide.
 
 ### Try Without Real Jobs
 
 ```bash
-python3 main.py --test
+python3 run.py --test
 ```
 
 Injects fake test jobs so you can see the full review flow without waiting for real postings.
